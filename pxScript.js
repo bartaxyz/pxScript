@@ -33,6 +33,199 @@ var pxError = function(message) {
 }
 
 /*
+ * isInt
+ *
+ * description:
+ *		return true or false based on that value is or isn't number
+ *
+ * example: 
+ *		isNumber(50);		// true
+ *		isNumber('50');		// true
+ *		isNumber('50f');	// false
+ *		isNumber('hey125');	// false
+ *
+ * returns:
+ *		true if is number, even if it's number string
+ *
+ */
+
+var isNumber = function(value) {
+	if(typeof value === 'number') {
+		return true;
+	} else if(typeof value == 'string') {
+		value = value.trim();
+		for(var i = 0; i < value.length; ++i) {
+			if(isNaN(parseInt(value[i], 10))) {
+				if(value[i] != '.') {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+}
+
+/*
+ * evaluation
+ */
+
+var pxEval = {
+	path: function(string, obj) {
+		if(string.match(/\(.*\)$/)) {
+			string = string.replace(/(\(.*\))$/, '');
+		}
+		string = string.replace(/\[/g, '.');
+		string = string.replace(/[\\]/g, '');
+		var pointer = obj.data;
+		var nesting = string.split(/[\[\.]/);
+		for(var i = 0; i < nesting.length; ++i) {
+			if(nesting[i][nesting[i].length - 1] == ']') {
+				nesting[i] = nesting[i].replace(/[\'\"\]]/g, '');
+			}
+			if(typeof pointer[nesting[i]] == 'undefined') {
+				pointer[nesting[i]] = {};
+			}
+			pointer = pointer[nesting[i]];
+		}
+		return pointer;
+	},
+	calculate: function(firstValue, secondValue, operator) {
+		if(operator == '+') return firstValue + secondValue;
+		else if(operator == '-') return firstValue - secondValue;
+		else if(operator == '*') return firstValue * secondValue;
+		else if(operator == '/') return firstValue / secondValue;
+	},
+	calc: function(string, obj) {
+
+		var nestedBrackets = 0;
+		var tempString = '';
+		var resultString = '';
+		var nestedBracketsWrite = true;
+		for(var i = 0; i < string.length; ++i) {
+			if(string[i] == '(') {
+				++nestedBrackets;
+				if(nestedBrackets == 1) {
+					nestedBracketsWrite = false;
+				}
+			} else if(string[i] == ')') {
+				--nestedBrackets;
+				if(nestedBrackets == 0) {
+					resultString += this.calc(tempString.replace('(', ''), obj);
+					tempString = '';
+					nestedBracketsWrite = true;
+				}
+			}
+			if(nestedBracketsWrite) {
+				resultString += string[i];
+			} else {
+				tempString += string[i];
+			}
+		}
+		string = resultString.replace(/\)/g, '');
+		console.log(string);
+
+		var calcChar = [];
+		for(var i = 0; i < string.length; ++i) {
+			if(string[i].match(/[\+\-\*\/]/)) {
+				calcChar.push(string[i]);
+			}
+		}
+
+		var exps = string.split(/[\+\-\*\/]/);
+		
+		if(isNumber(exps[0])) {
+			var result = 0;
+		} else {
+			var result = '';
+		}
+	
+		var quote;
+		var quoteCount = 0;
+		var exp;
+		var values = [];
+		var re;
+	
+		for(var i = 0; i < exps.length; ++i) {
+			exp = exps[i];
+			exp = exp.trim();
+			if(isNumber(exp)) {
+				exp = parseFloat(exp, 10);
+			} else if(exp.match(/^\".*\"$/) || exp.match(/^\'.*\'$/)) {
+				quote = exp[0];
+			
+				for(var ii = 0; ii < exp.length; ++ii) {
+					if(exp[ii] === quote) {
+						if(ii - 1 < 0) {
+							continue;
+						} else if(exp[ii - 1] === '\\') {
+							continue;
+						} else {
+							++quoteCount;
+						}
+					}
+				}
+
+				if(quoteCount !== 1) {
+					return pxError('Expression ' + string + ' isn\'t valid.');
+				} else {
+					quoteCount = 0;
+				}
+
+				var re = new RegExp('^' + quote + '(.*)' + quote + '$'); 
+
+				exp.replace(re, function($0, $1) {
+					exp = $1;
+					exp = exp.replace(/\\\'/g, '\'');
+				});
+
+			} else {
+				var temp = exp.replace(/[\\\']/g, '');
+				if(temp.match(/^[A-Za-z_][A-Za-z_0-9\.\[\]]*\(.*\)$/)) {
+					exp = this.path(exp, obj).apply(this, []);
+				} else {
+					exp = this.path(exp, obj);
+				}
+			}
+
+			values.push(exp);
+		}
+		var operators = ['/', '*', '+', '-'];
+		var newArr;
+		var index;
+		for(var i = 0; i < operators.length; ++i) {
+			for(var ii = 0; ii < calcChar.length; ++ii) {
+				if(calcChar[ii] == operators[i]) {
+					values[ii] = this.calculate(values[ii], values[ii + 1], operators[i]);
+					newArr = [];
+					for(var iii = 0; iii < values.length; ++iii) {
+						newArr.push(values[iii]);
+						if(iii == ii) {
+							++iii;
+						}
+					}
+					values = newArr;
+					newArr = [];
+					for(var iii = 0; iii < calcChar.length; ++iii) {
+						if(iii == ii) {
+							++iii;
+						}
+						if(typeof calcChar[iii] != 'undefined') {
+							newArr.push(calcChar[iii]);
+						}
+					}
+					calcChar = newArr;
+					--ii;
+				}
+			}
+		}
+		return values[0].toString(10);
+	},
+	eval: function(string, obj) {
+		return this.calc(string, obj);
+	}
+}
+
+/*
  * Data binding
  */
 
@@ -45,13 +238,28 @@ var pxBinder = function(root, obj) {
 		var binds = doc.querySelectorAll('[px-bind]');
 		var inputs = doc.querySelectorAll('[px-input]');
 		for(var i = 0; i < binds.length; ++i) {
-			if(!this.elements.binds[binds[i].getAttribute('px-bind')]) {
-				this.elements.binds[binds[i].getAttribute('px-bind')] = [];
-			}
-			this.elements.binds[binds[i].getAttribute('px-bind')].push(binds[i]);
+			this.registerBind(binds[i]);
 		}
 		for(var i = 0; i < inputs.length; ++i) {
 			this.registerInput(inputs[i]);
+		}
+	};
+	this.registerBind = function(element) {
+		var arr = element.getAttribute('px-bind').split('+');
+		var indexes = [];
+		var temp;
+		for(var i = 0; i < arr.length; ++i) {
+			arr[i] = arr[i].trim();
+			temp = arr[i];
+			if(temp.match(/^[A-Za-z_][A-Za-z_0-9\.\[\]]*$/)) {
+				indexes.push(i);
+			}
+		}
+		for(i = 0; i < indexes.length; ++i) {
+			if(!this.elements.binds[arr[indexes[i]]]) {
+				this.elements.binds[arr[indexes[i]]] = [];
+			}
+			this.elements.binds[arr[indexes[i]]].push(element);
 		}
 	};
 	this.registerInput = function(element) {
@@ -79,11 +287,13 @@ var pxBinder = function(root, obj) {
 		}
 		for(var i = 0; i < this.elements.inputs[name].length; ++i) {
 			input = this.elements.inputs[name][i];
-			input.value = value;
+			if(input != document.activeElement) {
+				input.value = value;
+			}
 		}
 		for(var i = 0; i < this.elements.binds[name].length; ++i) {
 			bind = this.elements.binds[name][i];
-			bind.textContent = value;
+			bind.textContent = obj.eval(bind.getAttribute('px-bind'));
 		}
 	};
 
@@ -102,7 +312,6 @@ var pxInjector = {
 		} else {
 			pxError('Dependency named \'' + name +'\' already exist.');
 		}
-		console.log(this.dependencies);
 	},
 	getDependencies: function(fn) {
 		var dependencies = [];
@@ -145,6 +354,7 @@ var pxInjector = {
  *	get()
  *	bind()
  *	watch()
+ *	eval()
  *
  * variables:
  *	watchers
@@ -192,6 +402,13 @@ pxInjector.createDependency('px', {
 					bool = false;
 				}
 				this.watchers[name] = fn;
+			},
+			eval: function(string) {
+				if(string.match(/^[A-Za-z_][A-Za-z_0-9\.\[\]]*$/)) {
+					return pxEval.path(string, this);
+				} else {
+					return pxEval.eval(string, this);
+				}
 			}
 		};
 		var binder = new pxBinder(element, px);
@@ -228,13 +445,6 @@ pxInjector.createDependency('pxHttp', {
 	}
 });
 
-/*var init = function() {}
-
-window.addEventListener('DOMContentLoaded', function(ev) {
-	init();
-	ev.stopPropagation();
-}, false);*/
-
 window.pxApp = function(fn) {
 
 	if(fn) {
@@ -268,9 +478,10 @@ window.pxApp = function(fn) {
  * TODO:
  *
  * Functions with dependency injection and scopes			// DONE
- * Data binding												//
- * Creating elements										//
- * Support for custom elements and shadow DOM 				//
+ * Data binding												// DONE
+ * Evaluation function										// 
+ * Creating elements										// 
+ * Support for custom elements and shadow DOM 				// 
  *
  *
  *
