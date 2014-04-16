@@ -1,0 +1,175 @@
+@import url(http://fonts.googleapis.com/css?family=Exo+2:200,300,400,500,600,700);
+@import url(http://fonts.googleapis.com/css?family=Source+Code+Pro:500);
+
+* { font-family: "Exo 2"; }
+
+html, body { height: 100%; }
+body { margin: 0; ; color: #222; font: 17px Arial; letter-spacing: .05em; }
+body > header { background: transparent url(../img/blah_2.gif) center; background-size: cover; height: 100%; width: 100%; }
+body > header .background { background: rgba(208, 76, 76, .85); height: 100%; }
+body > header h1, body > header p { color: rgb(255, 255, 255); float: left; line-height: 1em; text-align: center; width: 100%; }
+body > header h1 { font: 700 normal 5em "Exo 2"; margin: 50px 0 0; min-height: 114px; }
+body > header h1 span { position: relative; top: 0.6em; font-size: .6em; vertical-align: top; }
+
+.center-box {
+	display: block;
+	margin: 0 auto;
+	width: 100%;
+	max-width: 900px;
+	text-align: center;
+	color: #222;
+	font: 100 normal 1em "Exo 2";
+}
+
+.center-box p {
+	text-align: left;
+}
+
+.topic-box {
+	padding: 150px 0 0 0;
+	display: block;
+	margin: 0 auto;
+	width: 100%;
+	text-align: center;
+	color: #222;
+	font: 100 normal 1em "Exo 2";
+}
+
+.topic-box p {
+	font: 300 normal 15px "Exo 2";
+	text-align: left;
+}
+
+h2 {
+	display: block;
+	width: 100%;
+	max-width: 800px;
+	font: 200 normal 2em "Exo 2";
+	color: white;
+	margin: 0 auto;
+	padding-top: 250px;
+	padding-bottom: 150px;
+	text-align: center;
+}
+
+h3 {
+	margin: 0;
+	margin-bottom: 150px;
+	font: 200 normal 3em "Exo 2";
+}
+
+a {
+	background: white;
+	text-decoration: none;
+	padding: 15px 35px;
+	font-size: 25px;
+	display: inline-block;
+	width: 140px;
+	color: rgb(208, 76, 76);
+	position: relative;
+	cursor: pointer;
+	transition: .5s;
+}
+
+input {
+	display: block;
+	border: none;
+	font: 100 normal 20px "Exo 2";
+	border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+	color: #222;
+	background: white;
+	font-size: 1.6em;
+	padding: 5px 15px;
+}
+
+input:focus {
+	outline: none;
+}
+
+button {
+	position: relative;
+	top: 33px;
+	width: 150px;
+	height: 50px;
+	background: rgb(208, 76, 76);
+	border: none;
+	color: white;
+	margin: 10px;
+	font: 100 normal 20px "Exo 2";
+	cursor: pointer;
+}
+
+button:hover {
+}
+
+button:focus {
+	outline: none;
+}
+
+.box-background {
+	background: #222;
+}
+
+.example {
+	background: #444;
+	text-align: left;
+	width: 100%;
+	overflow: hidden;
+	border-radius: 0px;
+}
+
+.example * {
+}
+
+.example pre {
+	float: left;
+	display: block;
+	width: 50%;
+	height: 300px;
+	overflow: auto;
+	color: white;
+	margin: 0;
+	background: #444;
+	text-align: center;
+}
+
+.example pre:media(max-width:800) {
+	width: 100%;
+}
+
+.example pre * {
+	font: 12px 'Source Code Pro', courier;
+}
+
+.example pre .lang {
+	display: block;
+	font: 100 normal 20px "Exo 2";
+	padding: 10px;
+}
+
+.example pre code {
+	text-align: left;
+	display: block;
+	height: 250px;
+	background: #272822;
+	box-sizing: border-box;
+	padding: 0 15px;
+}
+
+.example .result {
+	background: white;
+	width: 70%;
+	margin: 0 auto;
+	box-sizing: border-box;
+	padding: 50px;
+	border-left: 5px;
+	font-size: 25px;
+}
+
+.example .result input {
+	display: block;
+	width: 80%;
+	margin: 0 auto;
+	font-size: 20px;
+	margin-bottom: 50px;
+}
