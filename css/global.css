@@ -114,9 +114,10 @@ button:focus {
 	background: #444;
 	text-align: left;
 	width: 100%;
-	border: 15px solid #222;
+	//border: 15px solid #222;
 	border-left: none;
 	border-right: none;
+	box-shadow: 0 0 50px rgba(0, 0, 0, 0.1);
 	overflow: hidden;
 	border-radius: 0px;
 }
@@ -129,7 +130,8 @@ button:focus {
 	display: block;
 	width: 33.332%;
 	height: 294px;
-	overflow: auto;
+	overflow-x: auto;
+	overflow-y: hidden;
 	color: white;
 	margin: 0;
 	background: #444;
