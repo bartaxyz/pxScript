@@ -114,6 +114,9 @@ button:focus {
 	background: #444;
 	text-align: left;
 	width: 100%;
+	border: 15px solid #222;
+	border-left: none;
+	border-right: none;
 	overflow: hidden;
 	border-radius: 0px;
 }
@@ -121,11 +124,11 @@ button:focus {
 .example * {
 }
 
-.example pre {
+.example pre, .example .result {
 	float: left;
 	display: block;
-	width: 50%;
-	height: 300px;
+	width: 33.332%;
+	height: 294px;
 	overflow: auto;
 	color: white;
 	margin: 0;
@@ -158,7 +161,7 @@ button:focus {
 
 .example .result {
 	background: white;
-	width: 70%;
+	color: #222;
 	margin: 0 auto;
 	box-sizing: border-box;
 	padding: 50px;

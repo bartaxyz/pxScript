@@ -22,24 +22,22 @@
 		<div class="topic-box">
 			<h3>Two-way data binding</h3>
 			<div class="example">
-				<div class="center-box">
-					<pre><span class="lang">HTML</span><code class="html">
+				<pre><span class="lang">HTML</span><code class="html">
 &lt;div px-app px-scope="main-scope"&gt;
     &lt;input type="text" px-input="name"&gt;
     Welcome &lt;span px-bind="name"&gt;&lt;/span&gt;!
 &lt;/div&gt;
-					</code></pre>
-					<pre><span class="lang">JavaScript</span><code class="js">
+				</code></pre>
+				<pre><span class="lang">JavaScript</span><code class="js">
 var myApp = pxApp();
 
 myApp.scope('main-scope', function(px) {
-    px.set('name', '');
+    px.set('name', 'Martin');
 });
-					</code></pre>
-					<div class="result">
-						<input type="text" placeholder="Name" px-input="name">
-						Welcome <span px-bind="name"></span>!
-					</div>
+				</code></pre>
+				<div class="result">
+					<input type="text" placeholder="Name" px-input="name">
+					Welcome <span px-bind="name"></span>!
 				</div>
 			</div>
 		</div>
