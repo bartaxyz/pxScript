@@ -3,15 +3,17 @@ var myApp = pxApp();
 myApp.register('api', {
 	value: function() {
 		return {
-			getUsers: function() {}
+			getUsers: function() {
+				// TODO: ajax API call
+			}
 		};
 	}
 });
 
 myApp.scope('main-scope', function(px, api) {
-	px.set('blah', 6453120);
-	px.set('fn', function() {
-		return 5;
+	px.set('name', 'Martin');
+	px.get('name'); // Martin
+	px.watch('name', function() {
+		// Calls after name change
 	});
-	console.log(px.eval('fn() + 5'));
 });

@@ -50,6 +50,11 @@ var pxError = function(message) {
  */
 
 var isNumber = function(value) { return isNaN(+value) ? false : true; }
+var isArray = function(value) { return toString.call(value) == '[object Array]'}
+var isUndefined = function(value){ return typeof value === 'undefined' }
+var isDefined = function(value){ return typeof value !== 'undefined' }
+
+var toBool = function(value) { return ((false + '').toLowerCase() == 'true') ? true : false }
 
 /*
  * evaluation
@@ -87,6 +92,8 @@ window.pxEval = {
 		var tempString = '';
 		var resultString = '';
 		var nestedBracketsWrite = true;
+		var calculating = true;
+
 		for(var i = 0; i < string.length; ++i) {
 			if(string[i] == '(') {
 				++nestedBrackets;
@@ -96,10 +103,17 @@ window.pxEval = {
 			} else if(string[i] == ')') {
 				--nestedBrackets;
 				if(nestedBrackets == 0) {
-					resultString += this.calc(tempString.replace('(', ''), obj);
+					tempString = this.calc(tempString.replace('(', ''), obj);
+					if(!isNaN(tempString)) {
+						resultString += tempString;
+					}
 					tempString = '';
 					nestedBracketsWrite = true;
 				}
+			} else if(string[i].match(/[\+\-\*\/]/)) {
+				;
+			} else if(string[i].match(/[a-zA-Z]/)) {
+				;
 			}
 			if(nestedBracketsWrite) {
 				resultString += string[i];
@@ -205,10 +219,15 @@ window.pxEval = {
 				}
 			}
 		}
-		return values[0];
+		if(isNumber(values[0])) {
+			return parseInt(values[0]);
+		} else {
+			return values[0];
+		}
 	},
 	json: function(string, obj) {
-		string = string.replace(/\s/g, '');
+		string = string.replace(/[\s]/g, '');
+		string = string.replace(/'/g, '"');
 		var tempString = '';
 		var resultString = '';
 		var writeToTemp = false;
@@ -221,7 +240,12 @@ window.pxEval = {
 					tempString = tempString.replace(/^\:/, '');
 					tempString = tempString.trim();
 					variables.push(tempString);
-					resultString += ':"' + this.calc(tempString, obj) + '"';
+					tempString = this.calc(tempString, obj);
+					if(isNumber(tempString)) {
+						resultString += ':' + tempString;
+					} else {
+						resultString += ':"' + tempString + '"';
+					}
 					writeToTemp = false;
 					tempString = '';
 				}
@@ -236,14 +260,17 @@ window.pxEval = {
 			} else {
 				resultString += string[i];
 			}
+			if(string[i] == '') {}
 		}
+		console.log(resultString);
 		return {
 			result: JSON.parse(resultString),
 			variables: variables
 		};
 	},
 	eval: function(string, obj) {
-		if(string.match(/\{[\s\S]\}/)) {
+		if(string.match(/\{[\s\S]*\}/)) {
+			console.log(string);
 			return this.json(string, obj);
 		} else {
 			return this.calc(string, obj);
@@ -303,7 +330,8 @@ var pxBinder = function(root, obj) {
 			self.bind(name, this.value);
 		}, false);
 	};
-	this.bind = function(name, value) {
+	this.bind = function(name, value, html) {
+		html = html || false;
 		var input, bind;
 		if(!this.elements.inputs[name]) {
 			this.elements.inputs[name] = [];
@@ -319,7 +347,11 @@ var pxBinder = function(root, obj) {
 		}
 		for(var i = 0; i < this.elements.binds[name].length; ++i) {
 			bind = this.elements.binds[name][i];
-			bind.textContent = obj.eval(bind.getAttribute('px-bind'));
+			if(html) {
+				bind.innerHTML = obj.eval(bind.getAttribute('px-bind'));
+			} else {
+				bind.textContent = obj.eval(bind.getAttribute('px-bind'));
+			}
 		}
 	};
 
@@ -395,7 +427,7 @@ pxInjector.createDependency('px', {
 			watchers: {},
 			data: {},
 			rootElement: element,
-			set: function(name, value) {
+			set: function(name, value, html) {
 				var pointer = this.data;
 				var nesting = name.split('.');
 				for(var i = 0; i < nesting.length - 1; ++i) {
@@ -405,7 +437,7 @@ pxInjector.createDependency('px', {
 					pointer = pointer[nesting[i]];
 				}
 				pointer[nesting[nesting.length - 1]] = value;
-				this.bind(name, value);
+				this.bind(name, value, html);
 				if(this.watchers[name]) {
 					this.watchers[name]();
 				}
@@ -418,8 +450,8 @@ pxInjector.createDependency('px', {
 				}
 				return pointer[nesting[nesting.length - 1]];
 			},
-			bind: function(name, value) {
-				binder.bind(name, value);
+			bind: function(name, value, html) {
+				binder.bind(name, value, html);
 			},
 			watch: function(name, fn, run) {
 				var bool = run || false;
@@ -443,7 +475,7 @@ pxInjector.createDependency('px', {
 });
 
 /*
- * Dependency: ajax
+ * Dependency: http
  *
  * methods:
  *	get()
@@ -458,6 +490,9 @@ pxInjector.createDependency('px', {
  *
  */
 
+/*
+ * TODO
+
 pxInjector.createDependency('http', {
 	value: function() {
 		return {
@@ -470,6 +505,7 @@ pxInjector.createDependency('http', {
 		};
 	}
 });
+*/
 
 window.pxApp = function(fn) {
 

@@ -5,7 +5,7 @@
 
 html, body { height: 100%; }
 body { margin: 0; ; color: #222; font: 17px Arial; letter-spacing: .05em; }
-body > header { background: transparent url(../img/blah_2.gif) center; background-size: cover; height: 100%; width: 100%; }
+body > header { background: #1A1A1A url(../img/blahblah.gif) center no-repeat; background-size: auto 100%; background-position: left; height: 100%; width: 100%; }
 body > header .background { background: rgba(208, 76, 76, .85); height: 100%; }
 body > header h1, body > header p { color: rgb(255, 255, 255); float: left; line-height: 1em; text-align: center; width: 100%; }
 body > header h1 { font: 700 normal 5em "Exo 2"; margin: 50px 0 0; min-height: 114px; }
