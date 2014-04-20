@@ -230,7 +230,7 @@ var pxEval = {
 	json: function(string, obj) {
 		var variables = [];
 		var self = this;
-		string = string.replace(/(:\s*)([\"\'a-zA-Z0-9][\"\'a-zA-Z0-9\s+]*)/g, function($0, $1, $2) {
+		string = string.replace(/(:\s*)([\"\'a-zA-Z0-9][\"\'a-zA-Z0-9\s\+\-\*\/\\]*)/g, function($0, $1, $2) {
 			var calculated = self.calc($2, obj);
 			console.log(JSON.stringify(calculated));
 			variables.push($2.trim());
