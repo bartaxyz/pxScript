@@ -134,12 +134,8 @@ button:focus {
 	overflow-y: hidden;
 	color: white;
 	margin: 0;
-	background: #444;
+	background: #272822;
 	text-align: center;
-}
-
-.example pre:media(max-width:800) {
-	width: 100%;
 }
 
 .example pre * {
@@ -150,6 +146,7 @@ button:focus {
 	display: block;
 	font: 100 normal 20px "Exo 2";
 	padding: 10px;
+	background: #444;
 }
 
 .example pre code {
@@ -177,4 +174,10 @@ button:focus {
 	margin: 0 auto;
 	font-size: 20px;
 	margin-bottom: 50px;
+}
+
+@media screen and (max-width:800px) {
+	.example pre, .example .result {
+		width: 100%;
+	}
 }

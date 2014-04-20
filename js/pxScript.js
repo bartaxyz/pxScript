@@ -50,7 +50,9 @@ var pxError = function(message) {
  */
 
 var isNumber = function(value) { return isNaN(+value) ? false : true; }
+var isString = function(value) { return typeof value == 'string' }
 var isArray = function(value) { return toString.call(value) == '[object Array]'}
+var isObject = function(value) { if(isString(value)) { value = JSON.parse(value) } return toString.call(value) == '[object Object]'}
 var isUndefined = function(value){ return typeof value === 'undefined' }
 var isDefined = function(value){ return typeof value !== 'undefined' }
 
@@ -226,45 +228,24 @@ window.pxEval = {
 		}
 	},
 	json: function(string, obj) {
-		string = string.replace(/[\s]/g, '');
-		string = string.replace(/'/g, '"');
-		var tempString = '';
-		var resultString = '';
-		var writeToTemp = false;
 		var variables = [];
-		for(var i = 0; i < string.length; ++i) {
-			if(string[i] == ':') {
-				writeToTemp = true;
-			} else if(string[i].match(/[\,\}]/)) {
-				if(writeToTemp) {
-					tempString = tempString.replace(/^\:/, '');
-					tempString = tempString.trim();
-					variables.push(tempString);
-					tempString = this.calc(tempString, obj);
-					if(isNumber(tempString)) {
-						resultString += ':' + tempString;
-					} else {
-						resultString += ':"' + tempString + '"';
-					}
-					writeToTemp = false;
-					tempString = '';
-				}
-			} else if(string[i] == '{') {
-				resultString += tempString;
-				tempString = '';
-				writeToTemp = false;
-			}
-			
-			if(writeToTemp) {
-				tempString += string[i];
+		var self = this;
+		string = string.replace(/(:\s*)([\"\'a-zA-Z0-9][\"\'a-zA-Z0-9\s\+\-\*\/\\]*)/g, function($0, $1, $2) {
+			var calculated = self.calc($2, obj);
+			console.log(JSON.stringify(calculated));
+			variables.push($2.trim());
+			if(isNumber(calculated)) {
+				return ':' + calculated;
+			} else if(isObject(calculated)) {
+				return ':' + JSON.stringify(calculated);
 			} else {
-				resultString += string[i];
+				return ': "' + calculated + '"';
 			}
-			if(string[i] == '') {}
-		}
-		console.log(resultString);
+		});
+		string = string.replace(/([a-z][^:]*)(?=\s*:)/g, '"$1"');
+		string = string.replace(/\"\"/g, '"');
 		return {
-			result: JSON.parse(resultString),
+			result: JSON.parse(string),
 			variables: variables
 		};
 	},
