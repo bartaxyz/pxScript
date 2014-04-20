@@ -205,8 +205,11 @@ button:focus {
 		width: 100%;
 	}
 
-	a {
-		padding: 15px 35px;
+	body > header a {
+		float: left;
+		padding: 15px 0;
 		font-size: 25px;
+		margin: 0;
+		width: 50%;
 	}
 }
