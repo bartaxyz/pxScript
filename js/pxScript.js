@@ -58,6 +58,11 @@ var isDefined = function(value){ return typeof value !== 'undefined' }
 
 var toBool = function(value) { return ((false + '').toLowerCase() == 'true') ? true : false }
 
+var regex = {
+	path: /^[A-Za-z_][A-Za-z_0-9\.\[\]\"\']*$/,
+	operators: /[\+\-\*\/]/
+}
+
 /*
  * evaluation
  */
@@ -112,7 +117,7 @@ window.pxEval = {
 					tempString = '';
 					nestedBracketsWrite = true;
 				}
-			} else if(string[i].match(/[\+\-\*\/]/)) {
+			} else if(string[i].match(regex.operators)) {
 				;
 			} else if(string[i].match(/[a-zA-Z]/)) {
 				;
@@ -129,12 +134,12 @@ window.pxEval = {
 
 		var calcChar = [];
 		for(var i = 0; i < string.length; ++i) {
-			if(string[i].match(/[\+\-\*\/]/)) {
+			if(string[i].match(regex.operators)) {
 				calcChar.push(string[i]);
 			}
 		}
 
-		var exps = string.split(/[\+\-\*\/]/);
+		var exps = string.split(regex.operators);
 		
 		if(isNumber(exps[0])) {
 			var result = 0;
@@ -238,12 +243,15 @@ window.pxEval = {
 				return ':' + calculated;
 			} else if(isObject(calculated)) {
 				return ':' + JSON.stringify(calculated);
+			} else if(calculated[0].match(/^[\'\"].*[\'\"]$/)) {
+				return ':' + calculated;
 			} else {
 				return ': "' + calculated + '"';
 			}
 		});
 		string = string.replace(/([a-z][^:]*)(?=\s*:)/g, '"$1"');
 		string = string.replace(/\"\"/g, '"');
+		console.log(string);
 		return {
 			result: JSON.parse(string),
 			variables: variables
@@ -251,7 +259,6 @@ window.pxEval = {
 	},
 	eval: function(string, obj) {
 		if(string.match(/\{[\s\S]*\}/)) {
-			console.log(string);
 			return this.json(string, obj);
 		} else {
 			return this.calc(string, obj);
@@ -285,7 +292,7 @@ var pxBinder = function(root, obj) {
 		for(var i = 0; i < arr.length; ++i) {
 			arr[i] = arr[i].trim();
 			temp = arr[i];
-			if(temp.match(/^[A-Za-z_][A-Za-z_0-9\.\[\]]*$/)) {
+			if(temp.match(regex.path)) {
 				indexes.push(i);
 			}
 		}
@@ -443,7 +450,7 @@ pxInjector.createDependency('px', {
 				this.watchers[name] = fn;
 			},
 			eval: function(string) {
-				if(string.match(/^[A-Za-z_][A-Za-z_0-9\.\[\]]*$/)) {
+				if(string.match(regex.path)) {
 					return pxEval.path(string, this);
 				} else {
 					return pxEval.eval(string, this);

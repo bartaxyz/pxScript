@@ -20,8 +20,31 @@
 			</div>
 		</header>
 
-		<div class="topic-box">
-			<h3>Two-way data binding</h3>
+		<div class="topic-box" px-scope="example1">
+			<h3>Scopes in HTML <span>&lt;px-app&gt;, &lt;px-scope&gt;</span></h3>
+			<div class="example">
+				<pre><span class="lang">HTML</span><code class="html">
+&lt;div px-app px-scope="main-scope"&gt;
+    &lt;input type="text" px-input="name"&gt;
+    Welcome &lt;span px-bind="name"&gt;&lt;/span&gt;!
+&lt;/div&gt;
+				</code></pre>
+				<pre><span class="lang">JavaScript</span><code class="js">
+var myApp = pxApp(); // initializing application
+
+myApp.scope('main-scope', function(px) {
+	// function within scope
+});
+				</code></pre>
+				<div class="result">
+					<input type="text" placeholder="Name" px-input="name">
+					Welcome <span px-bind="name"></span>!
+				</div>
+			</div>
+		</div>
+
+		<div class="topic-box" px-scope="example1">
+			<h3>Two-way data binding <span>px.set(name, value)</span></h3>
 			<div class="example">
 				<pre><span class="lang">HTML</span><code class="html">
 &lt;div px-app px-scope="main-scope"&gt;
@@ -33,7 +56,8 @@
 var myApp = pxApp();
 
 myApp.scope('main-scope', function(px) {
-    px.set('name', 'Martin');
+    px.set('name', 'Martin'); // Set name to 'Martin'
+    px.get('name');           // Get name variable
 });
 				</code></pre>
 				<div class="result">
@@ -42,6 +66,65 @@ myApp.scope('main-scope', function(px) {
 				</div>
 			</div>
 		</div>
+
+		<div class="topic-box" px-scope="example2">
+			<h3>Watching variables <span>px.watch(name, callback)</span></h3>
+			<div class="example">
+				<pre><span class="lang">HTML</span><code class="html">
+&lt;div px-app px-scope="main-scope"&gt;
+    &lt;input type="text" px-input="name"&gt;
+    Welcome &lt;span px-bind="name"&gt;&lt;/span&gt;!&lt;br&gt;
+    Changes: &lt;span px-bind="count"&gt;&lt;/span&gt;
+&lt;/div&gt;
+				</code></pre>
+				<pre><span class="lang">JavaScript</span><code class="js">
+var myApp = pxApp();
+
+myApp.scope('main-scope', function(px) {
+    px.set('name', 'Martin');
+    px.set('count', 0)
+    px.watch('name', function() {
+    	px.set('count', px.get('count') + 1);
+    });
+});
+				</code></pre>
+				<div class="result">
+					<input type="text" placeholder="Name" px-input="name">
+					Welcome <span px-bind="name"></span>!<br>
+					Changes: <span px-bind="count"></span>
+				</div>
+			</div>
+		</div>
+
+		<div class="topic-box" px-scope="example2">
+			<h3>String evaluation <span>px.eval(string)</span></h3>
+			<div class="example">
+				<pre><span class="lang">HTML</span><code class="html">
+&lt;div px-app px-scope="main-scope"&gt;
+    &lt;input type="text" px-input="name"&gt;
+    Welcome &lt;span px-bind="name"&gt;&lt;/span&gt;!&lt;br&gt;
+    Changes: &lt;span px-bind="count"&gt;&lt;/span&gt;
+&lt;/div&gt;
+				</code></pre>
+				<pre><span class="lang">JavaScript</span><code class="js">
+var myApp = pxApp();
+
+myApp.scope('main-scope', function(px) {
+    px.set('name', 'Martin');
+    px.set('count', 0)
+    px.watch('name', function() {
+    	px.set('count', px.get('count') + 1);
+    });
+});
+				</code></pre>
+				<div class="result">
+					<input type="text" placeholder="Name" px-input="name">
+					Welcome <span px-bind="name"></span>!<br>
+					Changes: <span px-bind="count"></span>
+				</div>
+			</div>
+		</div>
+
 
 		<div class="center-box topic-box">
 			<h3>The End</h3>

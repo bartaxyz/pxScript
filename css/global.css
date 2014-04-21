@@ -58,7 +58,13 @@ h3 {
 	font: 200 normal 3em "Exo 2";
 }
 
-a {
+h3 > span {
+	display: block;
+	margin-top: 30px;
+	font: 300 normal .4em "Exo 2";
+}
+
+body > header a {
 	background: white;
 	text-decoration: none;
 	padding: 15px 35px;
@@ -114,15 +120,14 @@ button:focus {
 	background: #444;
 	text-align: left;
 	width: 100%;
-	//border: 15px solid #222;
 	border-left: none;
 	border-right: none;
 	box-shadow: 0 0 50px rgba(0, 0, 0, 0.1);
 	overflow: hidden;
 	border-radius: 0px;
-}
-
-.example * {
+	border-top: 10px solid #444;
+	border-bottom: 10px solid #272822;
+	margin-bottom: 25px;
 }
 
 .example pre, .example .result {
@@ -201,8 +206,17 @@ button:focus {
 		padding-bottom: 100px;
 	}
 
+	.example {
+		border: none;
+	}
+
 	.example pre, .example .result {
 		width: 100%;
+		height: auto;
+	}
+
+	.example pre code {
+		height: auto;
 	}
 
 	body > header a {

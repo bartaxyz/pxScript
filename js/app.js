@@ -10,10 +10,14 @@ myApp.register('api', {
 	}
 });
 
-myApp.scope('main-scope', function(px, api) {
+myApp.scope('example1', function(px, api) {
 	px.set('name', 'Martin');
-	px.get('name'); // Martin
+});
+
+myApp.scope('example2', function(px) {
+	px.set('name', 'Martin');
+	px.set('count', 0);
 	px.watch('name', function() {
-		// Calls after name change
+		px.set('count', px.get('count') + 1);
 	});
 });
