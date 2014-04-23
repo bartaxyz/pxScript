@@ -211,8 +211,7 @@ function isArrayLike(obj) {
 		return true;
 	}
 
-	return isString(obj) || isArray(obj) || length === 0 ||
-				 typeof length === 'number' && length > 0 && (length - 1) in obj;
+	return isString(obj) || isArray(obj) || length === 0 || typeof length === 'number' && length > 0 && (length - 1) in obj;
 }
 
 /**

@@ -20,44 +20,51 @@
 			</div>
 		</header>
 
-		<div class="topic-box" px-scope="example1">
-			<h3>Scopes in HTML <span>&lt;px-app&gt;, &lt;px-scope&gt;</span></h3>
+		<div class="topic-box">
+			<h3>Scopes in HTML <br>
+				<a>&lt;px-app&gt;</a>
+				<a>&lt;px-scope="scope-name"&gt;</a>
+				<a>pxApp([callback])</a>
+				<a>pxApp.scope(name, callback)</a>
+			</h3>
 			<div class="example">
 				<pre><span class="lang">HTML</span><code class="html">
-&lt;div px-app px-scope="main-scope"&gt;
-    &lt;input type="text" px-input="name"&gt;
-    Welcome &lt;span px-bind="name"&gt;&lt;/span&gt;!
+&lt;div <span class="highlight">px-app</span> <span class="highlight">px-scope="main-scope"</span>&gt;
+    &lt;div&gt;I'm inside the scope&lt;/div&gt;
 &lt;/div&gt;
 				</code></pre>
 				<pre><span class="lang">JavaScript</span><code class="js">
-var myApp = pxApp(); // initializing application
+var myApp = <span class="highlight">pxApp();</span> // initializing application
 
-myApp.scope('main-scope', function(px) {
+<span class="highlight">myApp.scope('main-scope', function() {</span>
 	// function within scope
-});
+<span class="highlight">});</span>
 				</code></pre>
 				<div class="result">
-					<input type="text" placeholder="Name" px-input="name">
-					Welcome <span px-bind="name"></span>!
+					<div>I'm inside the scope</div>
 				</div>
 			</div>
 		</div>
 
 		<div class="topic-box" px-scope="example1">
-			<h3>Two-way data binding <span>px.set(name, value)</span></h3>
+			<h3>Two-way data binding <br>
+				<a>px.set(name, value[, html])</a>
+				<a>px.get(name)</a>
+				<a>px.bind(name[, html])</a>
+			</h3>
 			<div class="example">
 				<pre><span class="lang">HTML</span><code class="html">
 &lt;div px-app px-scope="main-scope"&gt;
-    &lt;input type="text" px-input="name"&gt;
-    Welcome &lt;span px-bind="name"&gt;&lt;/span&gt;!
+    &lt;input type="text" <span class="highlight">px-input="name"</span>&gt;
+    Welcome &lt;span <span class="highlight">px-bind="name"</span>&gt;&lt;/span&gt;!
 &lt;/div&gt;
 				</code></pre>
 				<pre><span class="lang">JavaScript</span><code class="js">
 var myApp = pxApp();
 
-myApp.scope('main-scope', function(px) {
-    px.set('name', 'Martin'); // Set name to 'Martin'
-    px.get('name');           // Get name variable
+myApp.scope('main-scope', function(<span class="highlight">px</span>) {
+    <span class="highlight">px.set('name', 'Martin');</span> // Set name to 'Martin'
+    <span class="highlight">px.get('name');</span>           // Get name variable
 });
 				</code></pre>
 				<div class="result">
@@ -68,7 +75,9 @@ myApp.scope('main-scope', function(px) {
 		</div>
 
 		<div class="topic-box" px-scope="example2">
-			<h3>Watching variables <span>px.watch(name, callback)</span></h3>
+			<h3>Watching variables <br>
+				<a>px.watch(name, callback)</a>
+			</h3>
 			<div class="example">
 				<pre><span class="lang">HTML</span><code class="html">
 &lt;div px-app px-scope="main-scope"&gt;
@@ -82,10 +91,10 @@ var myApp = pxApp();
 
 myApp.scope('main-scope', function(px) {
     px.set('name', 'Martin');
-    px.set('count', 0)
-    px.watch('name', function() {
-    	px.set('count', px.get('count') + 1);
-    });
+    px.set('count', 0);
+    <span class="highlight">px.watch('name', function() {</span>
+    <span class="highlight">	px.set('count', px.get('count') + 1);</span>
+    <span class="highlight">});</span>
 });
 				</code></pre>
 				<div class="result">
@@ -96,8 +105,10 @@ myApp.scope('main-scope', function(px) {
 			</div>
 		</div>
 
-		<div class="topic-box" px-scope="example2">
-			<h3>String evaluation <span>px.eval(string)</span></h3>
+		<div class="topic-box" px-scope="example3">
+			<h3>String evaluation <br>
+				<a>px.eval(string)</a>
+			</h3>
 			<div class="example">
 				<pre><span class="lang">HTML</span><code class="html">
 &lt;div px-app px-scope="main-scope"&gt;
@@ -113,7 +124,8 @@ myApp.scope('main-scope', function(px) {
     px.set('name', 'Martin');
     px.set('count', 0)
     px.watch('name', function() {
-    	px.set('count', px.get('count') + 1);
+       	<span class="highlight">px.eval('count = count + 1');</span>
+    	px.bind('count');
     });
 });
 				</code></pre>
