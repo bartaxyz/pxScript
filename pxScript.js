@@ -1,9 +1,8 @@
 /*
+ * pxScript
  *
- *
- *
- *
- *
+ * created by Ondřej Bárta alias PageOnline
+
  */
 
 (function(window, document, undefined) {
@@ -33,30 +32,90 @@ var pxError = function(message) {
 }
 
 /*
- * isNumber 	
- *
- * description:
- *		return true or false based on that value is or isn't number
- *
- * example: 
- *		isNumber(50);		// true
- *		isNumber('50');		// true
- *		isNumber('50f');	// false
- *		isNumber('hey125');	// false
- *
- * returns:
- *		true if is number, even if it's number string
  *
  */
 
-var isNumber = function(value) { return isNaN(+value) ? false : true; }
-var isString = function(value) { return typeof value == 'string' }
-var isArray = function(value) { return toString.call(value) == '[object Array]'}
-var isObject = function(value) { if(isString(value)) { value = JSON.parse(value) } return toString.call(value) == '[object Object]'}
-var isUndefined = function(value){ return typeof value === 'undefined' }
-var isDefined = function(value){ return typeof value !== 'undefined' }
+var isNumber = function(value) {
+	return isNaN(+value) ? false : true;
+}
 
-var toBool = function(value) { return ((false + '').toLowerCase() == 'true') ? true : false }
+var isString = function(value) {
+	return typeof value == 'string';
+}
+
+var isArray = function(value) {
+	return toString.call(value) == '[object Array]';
+}
+
+var isArrayLike = function(obj) {
+	if (obj == null || isWindow(obj)) {
+		return false;
+	}
+	var length = obj.length;
+	if (obj.nodeType === 1 && length) {
+		return true;
+	}
+	return isString(obj) || isArray(obj) || length === 0 || typeof length === 'number' && length > 0 && (length - 1) in obj;
+}
+
+var isObject = function(value) {
+	if(isString(value)) { value = JSON.parse(value) } return toString.call(value) == '[object Object]'
+}
+
+var isFunction = function(value) {
+	return typeof value === 'function';
+}
+
+var isUndefined = function(value) {
+	return typeof value === 'undefined';
+}
+
+var isDefined = function(value) {
+	return typeof value !== 'undefined';
+}
+
+var toBool = function(value) {
+	return ((false + '').toLowerCase() == 'true') ? true : false
+}
+
+var toCamelCase = function(value) {
+	return value.replace(/\-(.)/g, function($0, $1) {
+		return $1.toUpperCase();
+	});
+}
+
+var toDashCase = function(value) {
+	return value.replace(/([A-Z])/g, function($0, $1) {
+		return '-' + $1.toLowerCase();
+	});
+}
+
+var mergeObjects = function(obj1, obj2) {
+	forEach(obj1, function(prop, key) {
+		obj2[key] = prop;
+	});
+	return obj2;
+}
+
+var forEach = function(value, fn) {
+	if(isObject(value)) {
+		var arr = Object.keys(value);
+		for(var i = 0; i < arr.length; ++i) {
+			fn.call(value[arr[i]], arr[i], i);
+		}
+	} else if(isArrayLike(value)) {
+		for(var i = 0; i < value.length; ++i) {
+			fn.call(value[i], value[i], i);
+		}
+	}
+}
+
+
+
+var regex = {
+	path: /^[A-Za-z_][A-Za-z_0-9\.\[\]\"\']*$/,
+	operators: /[\+\-\*\/]/
+}
 
 /*
  * evaluation
@@ -75,7 +134,7 @@ var pxEval = {
 			if(nesting[i][nesting[i].length - 1] == ']') {
 				nesting[i] = nesting[i].replace(/[\'\"\]]/g, '');
 			}
-			if(typeof pointer[nesting[i]] == 'undefined') {
+			if(isUndefined(pointer[nesting[i]])) {
 				pointer[nesting[i]] = {};
 			}
 			pointer = pointer[nesting[i]];
@@ -112,7 +171,7 @@ var pxEval = {
 					tempString = '';
 					nestedBracketsWrite = true;
 				}
-			} else if(string[i].match(/[\+\-\*\/]/)) {
+			} else if(string[i].match(regex.operators)) {
 				;
 			} else if(string[i].match(/[a-zA-Z]/)) {
 				;
@@ -125,16 +184,16 @@ var pxEval = {
 		}
 		string = resultString.replace(/\)/g, '');
 
-		console.log(string);
+		//console.log(string);
 
 		var calcChar = [];
 		for(var i = 0; i < string.length; ++i) {
-			if(string[i].match(/[\+\-\*\/]/)) {
+			if(string[i].match(regex.operators)) {
 				calcChar.push(string[i]);
 			}
 		}
 
-		var exps = string.split(/[\+\-\*\/]/);
+		var exps = string.split(regex.operators);
 		
 		if(isNumber(exps[0])) {
 			var result = 0;
@@ -183,7 +242,7 @@ var pxEval = {
 
 			} else {
 				var temp = exp.replace(/[\\\']/g, '');
-				if(typeof obj.data[temp] == 'function') {
+				if(isFunction(obj.data[temp])) {
 					exp = this.path(exp, obj).apply(this, []);
 				} else {
 					exp = this.path(exp, obj);
@@ -192,6 +251,7 @@ var pxEval = {
 
 			values.push(exp);
 		}
+
 		var operators = ['/', '*', '+', '-'];
 		var newArr;
 		var index;
@@ -212,7 +272,7 @@ var pxEval = {
 						if(iii == ii) {
 							++iii;
 						}
-						if(typeof calcChar[iii] != 'undefined') {
+						if(isDefined(calcChar[iii])) {
 							newArr.push(calcChar[iii]);
 						}
 					}
@@ -238,23 +298,34 @@ var pxEval = {
 				return ':' + calculated;
 			} else if(isObject(calculated)) {
 				return ':' + JSON.stringify(calculated);
+			} else if(calculated[0].match(/^[\'\"].*[\'\"]$/)) {
+				return ':' + calculated;
 			} else {
 				return ': "' + calculated + '"';
 			}
 		});
 		string = string.replace(/([a-z][^:]*)(?=\s*:)/g, '"$1"');
 		string = string.replace(/\"\"/g, '"');
+		console.log(string);
 		return {
 			result: JSON.parse(string),
 			variables: variables
 		};
 	},
 	eval: function(string, obj) {
-		if(string.match(/\{[\s\S]*\}/)) {
-			console.log(string);
-			return this.json(string, obj);
-		} else {
-			return this.calc(string, obj);
+		var arr = string.split(';');
+		for(var i = 0; i < arr.length; ++i) {
+			var tempStr = arr[i].trim();
+			if(tempStr.match(/^[a-zA-Z\.\[\'\"\]]+\s*=\s*(.*)/)) {
+				var self = this;
+				tempStr = tempStr.replace(/^([a-zA-Z_0-9\.\[\'\"\]]*)+\s*=\s*(.*)/, function($0, $1, $2) {
+					obj.set($1, self.calc($2, obj));
+				});
+			} else if(tempStr.match(/\{[\s\S]*\}/)) {
+				return this.json(tempStr, obj);
+			} else {
+				return this.calc(tempStr, obj);
+			}
 		}
 	}
 }
@@ -285,7 +356,7 @@ var pxBinder = function(root, obj) {
 		for(var i = 0; i < arr.length; ++i) {
 			arr[i] = arr[i].trim();
 			temp = arr[i];
-			if(temp.match(/^[A-Za-z_][A-Za-z_0-9\.\[\]]*$/)) {
+			if(temp.match(regex.path)) {
 				indexes.push(i);
 			}
 		}
@@ -343,16 +414,19 @@ var pxBinder = function(root, obj) {
  * Dependency injection
  */
 
-var pxInjector = {
-	dependencies: {},
-	createDependency: function(name, obj) {
+var pxInjector = function() {
+	this.dependencies = {};
+	this.createDependency = function(name, obj) {
 		if(!this.dependencies[name]) {
 			this.dependencies[name] = obj;
 		} else {
 			pxError('Dependency named \'' + name +'\' already exist.');
 		}
-	},
-	getDependencies: function(fn) {
+	};
+	this.importDependencies = function(injector) {
+		;
+	};
+	this.getDependencies = function(fn) {
 		var dependencies = [];
 		fn.toString().replace(/^function\s*[^\(]\((.*[^\(])\)/, function($0, $1) {
 			var tempArr = $1.split(',');
@@ -361,8 +435,8 @@ var pxInjector = {
 			}
 		});
 		return this.findDependencies(dependencies);
-	},
-	findDependencies: function(arr) {
+	};
+	this.findDependencies = function(arr) {
 		var self = this;
 		return arr.map(function(value) {
 			if(self.dependencies[value]) {
@@ -372,18 +446,22 @@ var pxInjector = {
 				return false;
 			}
 		});
-	},
-	inject: function(fn, args) {
+	};
+	this.inject = function(fn, args) {
 		var arr = [];
 		var dependencies = this.getDependencies(fn);
 		for(var i = 0; i < dependencies.length; ++i) {
-			if(dependencies[i].value) {
-				arr.push(dependencies[i].value.apply(this, args));
-			}
+			arr.push(dependencies[i].apply(this, args));
 		}
 		fn.apply(fn, arr);
-	}
+	};
 };
+
+/*
+ * Injectors
+ */
+
+var scopeInjector = new pxInjector();
 
 /*
  * Dependency: px
@@ -393,6 +471,7 @@ var pxInjector = {
  *	get()
  *	bind()
  *	watch()
+ *	log()
  *	eval()
  *
  * variables:
@@ -402,58 +481,61 @@ var pxInjector = {
  *
  */
 
-pxInjector.createDependency('px', {
-	value: function(element) {
-		var px = {
-			watchers: {},
-			data: {},
-			rootElement: element,
-			set: function(name, value, html) {
-				var pointer = this.data;
-				var nesting = name.split('.');
-				for(var i = 0; i < nesting.length - 1; ++i) {
-					if(typeof pointer[nesting[i]] == 'undefined') {
-						pointer[nesting[i]] = {};
-					}
-					pointer = pointer[nesting[i]];
+scopeInjector.createDependency('px', function(element) {
+	var px = {
+		watchers: {},
+		data: {},
+		rootElement: element,
+		set: function(name, value, html) {
+			var pointer = this.data;
+			var nesting = name.split('.');
+			for(var i = 0; i < nesting.length - 1; ++i) {
+				if(typeof pointer[nesting[i]] == 'undefined') {
+					pointer[nesting[i]] = {};
 				}
-				pointer[nesting[nesting.length - 1]] = value;
-				this.bind(name, value, html);
-				if(this.watchers[name]) {
-					this.watchers[name]();
-				}
-			},
-			get: function(name) {
-				var pointer = this.data;
-				var nesting = name.split('.');
-				for(var i = 0; i < nesting.length - 1; ++i) {
-					pointer = pointer[nesting[i]];
-				}
-				return pointer[nesting[nesting.length - 1]];
-			},
-			bind: function(name, value, html) {
-				binder.bind(name, value, html);
-			},
-			watch: function(name, fn, run) {
-				var bool = run || false;
-				if(bool) {
-					fn();
-					bool = false;
-				}
-				this.watchers[name] = fn;
-			},
-			eval: function(string) {
-				if(string.match(/^[A-Za-z_][A-Za-z_0-9\.\[\]]*$/)) {
-					return pxEval.path(string, this);
-				} else {
-					return pxEval.eval(string, this);
-				}
+				pointer = pointer[nesting[i]];
 			}
-		};
-		var binder = new pxBinder(element, px);
-		return px;
-	}
+			pointer[nesting[nesting.length - 1]] = value;
+			this.bind(name, value, html);
+			if(this.watchers[name]) {
+				this.watchers[name]();
+			}
+		},
+		get: function(name) {
+			var pointer = this.data;
+			var nesting = name.split('.');
+			for(var i = 0; i < nesting.length - 1; ++i) {
+				pointer = pointer[nesting[i]];
+			}
+			return pointer[nesting[nesting.length - 1]];
+		},
+		bind: function(name, value, html) {
+			binder.bind(name, value, html);
+		},
+		watch: function(name, fn, run) {
+			var bool = run || false;
+			if(bool) {
+				fn();
+				bool = false;
+			}
+			this.watchers[name] = fn;
+		},
+		log: function(name) {
+			console.log(this.eval(name));
+		},
+		eval: function(string) {
+			if(string.match(regex.path)) {
+				return pxEval.path(string, this);
+			} else {
+				return pxEval.eval(string, this);
+			}
+		}
+	};
+	var binder = new pxBinder(element, px);
+	return px;
 });
+
+console.log(scopeInjector);
 
 /*
  * Dependency: http
@@ -486,13 +568,16 @@ pxInjector.createDependency('http', {
 		};
 	}
 });
-*/
+
+ */
+
+ 
 
 window.pxApp = function(fn) {
 
 	if(fn) {
 		var appElement = document.querySelector('[px-app]');
-		pxInjector.inject(fn, [appElement]);
+		scopeInjector.inject(fn, [appElement]);
 	}
 	
 	return {
@@ -505,10 +590,10 @@ window.pxApp = function(fn) {
 					break;
 				}
 			}
-			pxInjector.inject(fn, [elem]);
+			scopeInjector.inject(fn, [elem]);
 		},
 		register: function(name, fn) {
-			pxInjector.createDependency(name, fn);
+			scopeInjector.createDependency(name, fn);
 		}
 	}
 }
@@ -521,9 +606,9 @@ window.pxApp = function(fn) {
  * TODO:
  *
  * Functions with dependency injection and scopes			// DONE
- * Data binding												// DONE
- * Evaluation function										// 
- * Creating elements										// 
+ * Data binding								// DONE
+ * Evaluation function							// DONE
+ * Creating elements							// 
  * Support for custom elements and shadow DOM 				// 
  *
  *
