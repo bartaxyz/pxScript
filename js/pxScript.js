@@ -582,7 +582,6 @@ var pxInjector = function() {
 
 var scopeInjector = new pxInjector();
 var registerInjector = new pxInjector(scopeInjector);
-console.log(scopeInjector, registerInjector);
 
 /*
  * Dependency: px
