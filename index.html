@@ -16,8 +16,10 @@
 				<div class="center-box">
 					<a href="https://github.com/pxProject/pxScript">GitHub</a>
 					<a href="https://raw.githubusercontent.com/pxProject/pxScript/master/pxScript.js">Download</a>
+					<a href="#">Documentation</a>
 				</div>
 			</div>
+			
 		</header>
 
 		<div class="topic-box">
@@ -124,8 +126,7 @@ myApp.scope('main-scope', function(px) {
     px.set('name', 'Martin');
     px.set('count', 0)
     px.watch('name', function() {
-       	<span class="highlight">px.eval('count = count + 1');</span>
-    	px.bind('count');
+        <span class="highlight">px.eval('count = count + 1');</span>
     });
 });
 				</code></pre>
@@ -139,15 +140,19 @@ myApp.scope('main-scope', function(px) {
 
 
 		<div class="center-box topic-box">
-			<h3>The End</h3>
+			<h3 class="end">The End</h3>
 		</div>
 
+		<div ng-app="ngApp" ng-controller="mainController"></div>
+
+		<script src="js/prefixfree.js"></script>
 		<script src="js/highlight/highlight.js"></script>
 		<script>
 			hljs.initHighlighting();
 		</script>
 		<script src="js/pxScript.js"></script>
 		<script src="js/app.js"></script>
+
 		
 		
 	</body>

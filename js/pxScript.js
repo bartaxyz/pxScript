@@ -32,29 +32,97 @@ var pxError = function(message) {
 }
 
 /*
- * forEach(obj, fn(property, key))
+ * polyfill
  */
 
-var forEach = function(obj, fn) {
-	var arr = Object.keys(obj);
-	for(var i = 0; i < arr.length; ++i) {
-		fn.call(obj[arr[i]], arr[i]);
-	}
+if(!String.prototype.trim) {
+	String.prototype.trim = function () {
+		return this.replace(/^\s+|\s+$/g, '');
+	};
 }
 
-var isNumber = function(value) { return isNaN(+value) ? false : true; }
-var isString = function(value) { return typeof value == 'string' }
-var isArray = function(value) { return toString.call(value) == '[object Array]'}
-var isObject = function(value) { if(isString(value)) { value = JSON.parse(value) } return toString.call(value) == '[object Object]'}
-var isFunction = function(value) { return typeof value === 'function' }
-var isUndefined = function(value){ return typeof value === 'undefined' }
-var isDefined = function(value){ return typeof value !== 'undefined' }
+/*
+ *
+ */
 
-var toBool = function(value) { return ((false + '').toLowerCase() == 'true') ? true : false }
-var toCamelCase = function(value) { return value.replace(/\-(.)/g, function($0, $1) { return $1.toUpperCase() }) }
-var toDashCase = function(value) { return value.replace(/([A-Z])/g, function($0, $1) { return '-' + $1.toLowerCase() }) }
+var isNumber = function(value) {
+	return isNaN(+value) ? false : true;
+}
 
-var mergeObjects = function(obj1, obj2) { forEach(obj1, function(prop, key) { obj2[key] = prop }); return obj2; }
+var isString = function(value) {
+	return typeof value == 'string';
+}
+
+var isArray = function(value) {
+	return toString.call(value) == '[object Array]';
+}
+
+function isWindow(obj) {
+	return obj && obj.document && obj.location && obj.alert && obj.setInterval;
+}
+
+var isArrayLike = function(obj) {
+	if (obj == null || isWindow(obj)) {
+		return false;
+	}
+	var length = obj.length;
+	if (obj.nodeType === 1 && length) {
+		return true;
+	}
+	return isString(obj) || isArray(obj) || length === 0 || typeof length === 'number' && length > 0 && (length - 1) in obj;
+}
+
+var isObject = function(value) {
+	if(isString(value)) { value = JSON.parse(value) } return toString.call(value) == '[object Object]'
+}
+
+var isFunction = function(value) {
+	return typeof value === 'function';
+}
+
+var isUndefined = function(value) {
+	return typeof value === 'undefined';
+}
+
+var isDefined = function(value) {
+	return typeof value !== 'undefined';
+}
+
+var toBool = function(value) {
+	return ((false + '').toLowerCase() == 'true') ? true : false
+}
+
+var toCamelCase = function(value) {
+	return value.replace(/\-(.)/g, function($0, $1) {
+		return $1.toUpperCase();
+	});
+}
+
+var toDashCase = function(value) {
+	return value.replace(/([A-Z])/g, function($0, $1) {
+		return '-' + $1.toLowerCase();
+	});
+}
+
+var mergeObjects = function(obj1, obj2) {
+	forEach(obj1, function(prop, key) {
+		obj2[key] = prop;
+	});
+	return obj2;
+}
+
+var forEach = function(value, fn) {
+	if(isObject(value)) {
+		var arr = Object.keys(value);
+		for(var i = 0; i < arr.length; ++i) {
+			fn.call(this, value[arr[i]], arr[i], i);
+		}
+	} else if(isArrayLike(value)) {
+		for(var i = 0; i < value.length; ++i) {
+			fn.call(this, value[i], value[i], i);
+		}
+	}
+}
 
 
 
@@ -67,7 +135,7 @@ var regex = {
  * evaluation
  */
 
-window.pxEval = {
+var pxEval = {
 	path: function(string, obj) {
 		if(string.match(/\(.*\)$/)) {
 			string = string.replace(/(\(.*\))$/, '');
@@ -238,7 +306,6 @@ window.pxEval = {
 		var self = this;
 		string = string.replace(/(:\s*)([\"\'a-zA-Z0-9][\"\'a-zA-Z0-9\s\+\-\*\/\\]*)/g, function($0, $1, $2) {
 			var calculated = self.calc($2, obj);
-			console.log(JSON.stringify(calculated));
 			variables.push($2.trim());
 			if(isNumber(calculated)) {
 				return ':' + calculated;
@@ -252,27 +319,129 @@ window.pxEval = {
 		});
 		string = string.replace(/([a-z][^:]*)(?=\s*:)/g, '"$1"');
 		string = string.replace(/\"\"/g, '"');
-		console.log(string);
 		return {
 			result: JSON.parse(string),
 			variables: variables
 		};
 	},
+	command: function(string, obj, self) {
+		var tempStr = string.trim();
+		if(tempStr.match(/^[a-zA-Z_0-9\.\[\'\"\]]+\s*(\+|\-|\*|\/)=\s*(.*)/)) {
+			tempStr = tempStr.replace(/^([a-zA-Z_0-9\.\[\'\"\]]*)+\s*(\+|\-|\*|\/)=\s*(.*)/, function($0, $1, $2, $3) {
+				obj.set($1, self.calc($1 + $2 + $3, obj));
+			});
+		} else if(tempStr.match(/^[a-zA-Z_0-9\.\[\'\"\]]+\s*=\s*(.*)/)) {
+			tempStr = tempStr.replace(/^([a-zA-Z_0-9\.\[\'\"\]]*)+\s*=\s*(.*)/, function($0, $1, $2) {
+				obj.set($1, self.calc($2, obj));
+			});
+		} else if(tempStr.match(/\{[\s\S]*\}/)) {
+			console.log(self);
+			return self.json(tempStr, obj);
+		} else {
+			return self.calc(tempStr, obj);
+		}
+	},
 	eval: function(string, obj) {
 		var arr = string.split(';');
-		for(var i = 0; i < arr.length; ++i) {
-			var tempStr = arr[i].trim();
-			if(tempStr.match(/^[a-zA-Z\.\[\'\"\]]+\s*=\s*(.*)/)) {
-				var self = this;
-				tempStr = tempStr.replace(/^([a-zA-Z_0-9\.\[\'\"\]]*)+\s*=\s*(.*)/, function($0, $1, $2) {
-					obj.set($1, self.calc($2, obj));
-				});
-			} else if(tempStr.match(/\{[\s\S]*\}/)) {
-				return this.json(tempStr, obj);
-			} else {
-				return this.calc(tempStr, obj);
-			}
+		var self = this;
+		if(arr.length == 1) {
+			return this.command(arr[0], obj, this);
+		} else {
+			forEach(arr, function(param) {
+				self.command(param, obj, self);
+			});
 		}
+	}
+}
+
+/*
+ * Ajax
+ *
+ * obj = {url[, method[, callback]]}
+ */
+
+window.pxHttp = {
+	parseHeaders: function(string) {
+		var key;
+		var obj = {};
+		var arr = string.split(/[\n\r]/);
+		forEach(arr, function(value) {
+			if(value != '') {
+				key = value.substr(0, value.indexOf(':'));
+				value = value.substr(value.indexOf(':') + 1);
+				key = toCamelCase(key.toLowerCase());
+				obj[key] = value.trim();
+			}
+		});
+		return obj;
+	},
+	stringifyData: function(obj) {
+		var parts = [];
+		forEach(obj, function(value, key) {
+			parts.push(key + '=' + value);
+		});
+		return encodeURI(parts.join('&'));
+	},
+	createUrl: function(url, obj) {
+		return encodeURI(url + '?' + this.stringifyData(obj));
+	},
+	requestHeaders: {
+		post: {
+			'Content-Type': 'application/x-www-form-urlencoded'
+		}
+	},
+	request: function(obj) {
+		var req = new window.XMLHttpRequest() || new ActiveXObject('Microsoft.XMLHTTP');
+		var self = this;
+		var response;
+		obj.url = this.createUrl(obj.url, obj.params);
+		req.open(obj.method || 'GET', obj.url, false);
+		forEach(this.requestHeaders, function(value, key) {
+			if(obj.method.toLowerCase() == key) {
+				forEach(value, function(value, key) {
+					if(isDefined(value)) {
+						req.setRequestHeader(key, value);
+					}
+				});
+			}
+		});
+		forEach(obj.headers, function(value, key) {
+			if(isDefined(value)) {
+				req.setRequestHeader(key, value);
+			}
+		});
+		req.addEventListener('readystatechange', function() {
+			if(this.readyState == 4) {
+				try {
+					response = JSON.parse(this.response);
+				} catch(err) {
+					response = this.response;
+				}
+				var headers = self.parseHeaders(this.getAllResponseHeaders());
+				if(this.status == 200 && obj.success) {
+					obj.success.call(obj, response, this.status, headers);
+				} else if(obj.error) {
+					obj.error.call(obj, response, this.status, headers);
+				}
+			}
+		}, false);
+		var events = ['loadstart', 'progress', 'error', 'abort', 'load', 'loadend'];
+		forEach(events, function(value){
+			if(obj[value]) {
+				req.addEventListener('on' + value, obj[value], false);
+			}
+		});
+		if(obj.data) {
+			req.send(this.stringifyData(obj.data));
+		} else {
+			req.send(null);
+		}
+	}
+}
+
+var pxElement = {
+	create: function() {
+		;
 	}
 }
 
@@ -370,7 +539,7 @@ var pxInjector = function() {
 		}
 	};
 	this.importDependencies = function(injector) {
-		;
+		this.dependencies = mergeObjects(this.dependencies, injector.dependencies);
 	};
 	this.getDependencies = function(fn) {
 		var dependencies = [];
@@ -401,6 +570,10 @@ var pxInjector = function() {
 		}
 		fn.apply(fn, arr);
 	};
+	self = this;
+	forEach(arguments, function(value) {
+		self.importDependencies(value);
+	});
 };
 
 /*
@@ -408,6 +581,8 @@ var pxInjector = function() {
  */
 
 var scopeInjector = new pxInjector();
+var registerInjector = new pxInjector(scopeInjector);
+console.log(scopeInjector, registerInjector);
 
 /*
  * Dependency: px
@@ -427,7 +602,7 @@ var scopeInjector = new pxInjector();
  *
  */
 
-scopeInjector.createDependency('px', function(element) {
+scopeInjector.createDependency('px', function px(element) {
 	var px = {
 		watchers: {},
 		data: {},
@@ -467,7 +642,11 @@ scopeInjector.createDependency('px', function(element) {
 			this.watchers[name] = fn;
 		},
 		log: function(name) {
-			console.log(this.eval(name));
+			if(isString(name)) {
+				console.log(this.eval(name));
+			} else {
+				console.log(name);
+			}
 		},
 		eval: function(string) {
 			if(string.match(regex.path)) {
@@ -480,8 +659,6 @@ scopeInjector.createDependency('px', function(element) {
 	var binder = new pxBinder(element, px);
 	return px;
 });
-
-console.log(scopeInjector);
 
 /*
  * Dependency: http
@@ -499,23 +676,21 @@ console.log(scopeInjector);
  *
  */
 
-/*
- * TODO
-
-pxInjector.createDependency('http', {
-	value: function() {
-		return {
-			get: function(path) {
-				;
-			},
-			post: function(path) {
-				;
-			}
-		};
-	}
+scopeInjector.createDependency('http', function http() {
+	return function(obj) {
+		if(isDefined(obj) && isObject(obj)) {
+			pxHttp.request(obj);
+		} else {
+			var tempObj = {};
+			forEach(['GET', 'POST', 'HEAD', 'DELETE', 'JSONP', 'PUT'], function(value) {
+				tempObj[value.toLowerCase()] = function(obj) {
+					pxHttp.request(mergeObjects({ method: value }, obj));
+				}
+			});
+			return tempObj;
+		}
+	};
 });
-
- */
 
 window.pxApp = function(fn) {
 
@@ -551,7 +726,7 @@ window.pxApp = function(fn) {
  *
  * Functions with dependency injection and scopes			// DONE
  * Data binding												// DONE
- * Evaluation function										// 
+ * Evaluation function										// DONE
  * Creating elements										// 
  * Support for custom elements and shadow DOM 				// 
  *

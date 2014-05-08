@@ -247,8 +247,6 @@ function forEach(obj, iterator, context) {
 	if (obj) {
 		if (isFunction(obj)){
 			for (key in obj) {
-				// Need to check if hasOwnProperty exists,
-				// as on IE8 the result of querySelectorAll is an object without a hasOwnProperty function
 				if (key != 'prototype' && key != 'length' && key != 'name' && (!obj.hasOwnProperty || obj.hasOwnProperty(key))) {
 					iterator.call(context, obj[key], key);
 				}
@@ -1580,7 +1578,6 @@ function setupModuleLoader(window) {
 			});
 		};
 	});
-
 }
 
 /* global
