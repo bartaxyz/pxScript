@@ -440,7 +440,12 @@ window.pxHttp = {
 }
 
 var pxElement = {
+	elements: {},
+	attributes: {},
 	create: function() {
+		;
+	},
+	registerAttribute: function() {
 		;
 	}
 }

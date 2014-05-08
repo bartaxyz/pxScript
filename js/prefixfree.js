@@ -13,11 +13,12 @@
 
 (function() {
 	if(!window.StyleFix || !window.PrefixFree) return;
-	
+
 	StyleFix.register(function(css) {
 		css = css.replace(/\/\*(.|[\r\n])*?\*\//g, '');
 		parseCSS = function(str) {
-			if(str.indexOf('keyframes ') != -1 || str.indexOf('media screen and ') != -1) {
+			console.log(str);
+			if(str.indexOf('@keyframes ') != -1 || str.indexOf('@media') != -1) {
 				return { outer: str, inner: '', response: false };
 			}
 
