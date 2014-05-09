@@ -27,7 +27,7 @@ body {
 			transform: translate(0, -50%);
 		}
 		h1, p {
-			color: rgb(255, 255, 255);
+			color: white;
 			float: left;
 			line-height: 1em;
 			text-align: center;
@@ -75,8 +75,14 @@ body {
 			font-size: 25px;
 			text-align: center;
 			background: whitesmoke;
+			border: none;
+			appearance: none;
+			color: rgb(208, 76, 76);
+			padding: 15px;
 			option {
 				text-align: center;
+				appearance: none;
+				padding: 15px;
 			}
 		}
 	}

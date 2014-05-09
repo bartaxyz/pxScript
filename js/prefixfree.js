@@ -17,7 +17,6 @@
 	StyleFix.register(function(css) {
 		css = css.replace(/\/\*(.|[\r\n])*?\*\//g, '');
 		parseCSS = function(str) {
-			console.log(str);
 			if(str.indexOf('@keyframes ') != -1 || str.indexOf('@media') != -1) {
 				return { outer: str, inner: '', response: false };
 			}

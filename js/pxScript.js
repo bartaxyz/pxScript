@@ -2,7 +2,7 @@
  * pxScript
  *
  * created by Ondřej Bárta alias PageOnline
-
+ *
  */
 
 (function(window, document, undefined) {
@@ -12,20 +12,6 @@
 if(typeof pxApp !== 'undefined') {
 	return false;
 }
-
-/*
- * pxError
- *
- * description:
- *		outputs and error and all callers
- *
- * example: 
- *		pxError('Access denied!'); // console outputs an error and function callers
- *
- * returns:
- *		'undefined'
- *
- */
 
 var pxError = function(message) {
 	console.error(new Error(message).stack);
@@ -360,7 +346,7 @@ var pxEval = {
  * obj = {url[, method[, callback]]}
  */
 
-window.pxHttp = {
+var pxHttp = {
 	parseHeaders: function(string) {
 		var key;
 		var obj = {};
@@ -446,6 +432,9 @@ var pxElement = {
 		;
 	},
 	registerAttribute: function() {
+		;
+	},
+	registerElement: function() {
 		;
 	}
 }
@@ -540,7 +529,7 @@ var pxInjector = function() {
 		if(!this.dependencies[name]) {
 			this.dependencies[name] = obj;
 		} else {
-			pxError('Dependency named \'' + name +'\' already exist.');
+			pxError('Dependency named \'' + name + '\' already exist.');
 		}
 	};
 	this.importDependencies = function(injector) {
@@ -548,7 +537,8 @@ var pxInjector = function() {
 	};
 	this.getDependencies = function(fn) {
 		var dependencies = [];
-		fn.toString().replace(/^function\s*[^\(]\((.*[^\(])\)/, function($0, $1) {
+		if(!isFunction(fn)) return false;
+		fn.toString().replace(/^function\s*.*\s*[^\(]\((.*[^\(])\)/, function($0, $1) {
 			var tempArr = $1.split(',');
 			for(var i = 0; i < tempArr.length; ++i) {
 				dependencies.push(tempArr[i].trim());
@@ -567,12 +557,25 @@ var pxInjector = function() {
 			}
 		});
 	};
-	this.inject = function(fn, args) {
+	this.inject = function(fn, element) {
+		this.dependencies.element = function() {
+			return element[0];
+		}
 		var arr = [];
 		var dependencies = this.getDependencies(fn);
-		for(var i = 0; i < dependencies.length; ++i) {
-			arr.push(dependencies[i].apply(this, args));
-		}
+		var self = this;
+		forEach(dependencies, function(value) {
+			arr.push((function() {
+				var depend = self.getDependencies(value);
+				var arr = [];
+				console.log(element[0]);
+				forEach(depend, function(value) {
+					arr.push(value.apply(this));
+				});
+				console.log(arr);
+				return value.apply(this, arr);
+			})());
+		});
 		fn.apply(fn, arr);
 	};
 	self = this;
@@ -588,25 +591,7 @@ var pxInjector = function() {
 var scopeInjector = new pxInjector();
 var registerInjector = new pxInjector(scopeInjector);
 
-/*
- * Dependency: px
- *
- * methods:
- *	set()
- *	get()
- *	bind()
- *	watch()
- *	log()
- *	eval()
- *
- * variables:
- *	watchers
- *	data
- *	rootElement
- *
- */
-
-scopeInjector.createDependency('px', function px(element) {
+scopeInjector.createDependency('px', function px(element, http) {
 	var px = {
 		watchers: {},
 		data: {},
@@ -663,22 +648,6 @@ scopeInjector.createDependency('px', function px(element) {
 	var binder = new pxBinder(element, px);
 	return px;
 });
-
-/*
- * Dependency: http
- *
- * methods:
- *	get()
- *	post()
- *	
- *	
- *
- * variables:
- *	
- *	
- *	
- *
- */
 
 scopeInjector.createDependency('http', function http() {
 	return function(obj) {
