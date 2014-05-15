@@ -342,8 +342,6 @@ var pxEval = {
 
 /*
  * Ajax
- *
- * obj = {url[, method[, callback]]}
  */
 
 var pxHttp = {
@@ -425,19 +423,30 @@ var pxHttp = {
 	}
 }
 
-var pxElement = {
-	elements: {},
-	attributes: {},
-	create: function() {
-		;
-	},
-	registerAttribute: function() {
-		;
-	},
-	registerElement: function() {
-		;
-	}
-}
+/*
+ * Elements
+ */
+
+var pxElement = function() {
+	this.elements = {};
+	this.create = function(name, obj) {
+		var element;
+		if(name.indexOf('<') != -1 && name.indexOf('>') != -1) {
+			element = document.createElement('div');
+			element.innerHTML = name;
+			element = element.childNodes[0];
+		} else {
+			element = document.createElement(name);
+			forEach(obj, function(value, key) {
+				element[key] = value;
+			});
+		}
+		return element;
+	};
+	this.register = function(name, fn) {
+		this.elements[name] = fn;
+	};
+};
 
 /*
  * Data binding
@@ -482,17 +491,19 @@ var pxBinder = function(root, obj) {
 		}
 		this.elements.inputs[element.getAttribute('px-input')].push(element);
 		var name = element.getAttribute('px-input');
-		if(element.value) {
-			this.bind(name, element.value);
-		}
 		var self = this;
+		if(isDefined(element.value)) {
+			this.bind(name, element.value);
+		} else {
+			this.bind(name, element.textContent);
+		}
 		element.addEventListener('input', function() {
 			obj.set(name, this.value);
-			self.bind(name, this.value);
+			self.bind(name, this.value, true);
 		}, false);
 	};
 	this.bind = function(name, value, html) {
-		html = html || false;
+		var html = html || false;
 		var input, bind;
 		if(!this.elements.inputs[name]) {
 			this.elements.inputs[name] = [];
@@ -503,7 +514,11 @@ var pxBinder = function(root, obj) {
 		for(var i = 0; i < this.elements.inputs[name].length; ++i) {
 			input = this.elements.inputs[name][i];
 			if(input != document.activeElement) {
-				input.value = value;
+				if(isDefined(input.value)) {
+					input.value = value;
+				} else {
+					input.textContent = value;
+				}
 			}
 		}
 		for(var i = 0; i < this.elements.binds[name].length; ++i) {
@@ -517,7 +532,7 @@ var pxBinder = function(root, obj) {
 	};
 
 	this.parseHTML(root);
-}
+};
 
 /*
  * Dependency injection
@@ -525,7 +540,7 @@ var pxBinder = function(root, obj) {
 
 var pxInjector = function() {
 	this.dependencies = {};
-	this.createDependency = function(name, obj) {
+	this.register = function(name, obj) {
 		if(!this.dependencies[name]) {
 			this.dependencies[name] = obj;
 		} else {
@@ -558,23 +573,14 @@ var pxInjector = function() {
 		});
 	};
 	this.inject = function(fn, element) {
-		this.dependencies.element = function() {
+		this.dependencies.element = function element() {
 			return element[0];
 		}
 		var arr = [];
 		var dependencies = this.getDependencies(fn);
 		var self = this;
 		forEach(dependencies, function(value) {
-			arr.push((function() {
-				var depend = self.getDependencies(value);
-				var arr = [];
-				console.log(element[0]);
-				forEach(depend, function(value) {
-					arr.push(value.apply(this));
-				});
-				console.log(arr);
-				return value.apply(this, arr);
-			})());
+			arr.push(value.apply(this, element));
 		});
 		fn.apply(fn, arr);
 	};
@@ -585,13 +591,14 @@ var pxInjector = function() {
 };
 
 /*
- * Injectors
+ * some variables
  */
 
 var scopeInjector = new pxInjector();
 var registerInjector = new pxInjector(scopeInjector);
+var scopeElement = new pxElement();
 
-scopeInjector.createDependency('px', function px(element, http) {
+scopeInjector.register('px', function px(element) {
 	var px = {
 		watchers: {},
 		data: {},
@@ -643,13 +650,18 @@ scopeInjector.createDependency('px', function px(element, http) {
 			} else {
 				return pxEval.eval(string, this);
 			}
+		},
+		element: function(name, obj) {
+			var element = scopeElement.create(name, obj);
+			binder.parseHTML(element);
+			return element;
 		}
 	};
 	var binder = new pxBinder(element, px);
 	return px;
 });
 
-scopeInjector.createDependency('http', function http() {
+scopeInjector.register('http', function http() {
 	return function(obj) {
 		if(isDefined(obj) && isObject(obj)) {
 			pxHttp.request(obj);
@@ -665,7 +677,14 @@ scopeInjector.createDependency('http', function http() {
 	};
 });
 
-window.pxApp = function(fn) {
+scopeElement.register('pxClick', function() {
+	console.log(arguments);
+	return {
+
+	}
+});
+
+window.pxApp = function(name, fn) {
 
 	if(fn) {
 		var appElement = document.querySelector('[px-app]');
@@ -683,9 +702,15 @@ window.pxApp = function(fn) {
 				}
 			}
 			scopeInjector.inject(fn, [elem]);
+			return this;
 		},
 		register: function(name, fn) {
-			scopeInjector.createDependency(name, fn);
+			scopeInjector.register(name, fn);
+			return this;
+		},
+		include: function(px) {
+			console.log(px);
+			return this;
 		}
 	}
 }
