@@ -2,7 +2,7 @@
  * pxScript
  *
  * created by Ondřej Bárta alias PageOnline
-
+ *
  */
 
 (function(window, document, undefined) {
@@ -13,22 +13,18 @@ if(typeof pxApp !== 'undefined') {
 	return false;
 }
 
-/*
- * pxError
- *
- * description:
- *		outputs and error and all callers
- *
- * example: 
- *		pxError('Access denied!'); // console outputs an error and function callers
- *
- * returns:
- *		'undefined'
- *
- */
-
 var pxError = function(message) {
 	console.error(new Error(message).stack);
+}
+
+/*
+ * polyfill
+ */
+
+if(!String.prototype.trim) {
+	String.prototype.trim = function () {
+		return this.replace(/^\s+|\s+$/g, '');
+	};
 }
 
 /*
@@ -45,6 +41,10 @@ var isString = function(value) {
 
 var isArray = function(value) {
 	return toString.call(value) == '[object Array]';
+}
+
+function isWindow(obj) {
+	return obj && obj.document && obj.location && obj.alert && obj.setInterval;
 }
 
 var isArrayLike = function(obj) {
@@ -101,11 +101,11 @@ var forEach = function(value, fn) {
 	if(isObject(value)) {
 		var arr = Object.keys(value);
 		for(var i = 0; i < arr.length; ++i) {
-			fn.call(value[arr[i]], arr[i], i);
+			fn.call(this, value[arr[i]], arr[i], i);
 		}
 	} else if(isArrayLike(value)) {
 		for(var i = 0; i < value.length; ++i) {
-			fn.call(value[i], value[i], i);
+			fn.call(this, value[i], value[i], i);
 		}
 	}
 }
@@ -292,7 +292,6 @@ var pxEval = {
 		var self = this;
 		string = string.replace(/(:\s*)([\"\'a-zA-Z0-9][\"\'a-zA-Z0-9\s\+\-\*\/\\]*)/g, function($0, $1, $2) {
 			var calculated = self.calc($2, obj);
-			console.log(JSON.stringify(calculated));
 			variables.push($2.trim());
 			if(isNumber(calculated)) {
 				return ':' + calculated;
@@ -306,29 +305,148 @@ var pxEval = {
 		});
 		string = string.replace(/([a-z][^:]*)(?=\s*:)/g, '"$1"');
 		string = string.replace(/\"\"/g, '"');
-		console.log(string);
 		return {
 			result: JSON.parse(string),
 			variables: variables
 		};
 	},
+	command: function(string, obj, self) {
+		var tempStr = string.trim();
+		if(tempStr.match(/^[a-zA-Z_0-9\.\[\'\"\]]+\s*(\+|\-|\*|\/)=\s*(.*)/)) {
+			tempStr = tempStr.replace(/^([a-zA-Z_0-9\.\[\'\"\]]*)+\s*(\+|\-|\*|\/)=\s*(.*)/, function($0, $1, $2, $3) {
+				obj.set($1, self.calc($1 + $2 + $3, obj));
+			});
+		} else if(tempStr.match(/^[a-zA-Z_0-9\.\[\'\"\]]+\s*=\s*(.*)/)) {
+			tempStr = tempStr.replace(/^([a-zA-Z_0-9\.\[\'\"\]]*)+\s*=\s*(.*)/, function($0, $1, $2) {
+				obj.set($1, self.calc($2, obj));
+			});
+		} else if(tempStr.match(/\{[\s\S]*\}/)) {
+			console.log(self);
+			return self.json(tempStr, obj);
+		} else {
+			return self.calc(tempStr, obj);
+		}
+	},
 	eval: function(string, obj) {
 		var arr = string.split(';');
-		for(var i = 0; i < arr.length; ++i) {
-			var tempStr = arr[i].trim();
-			if(tempStr.match(/^[a-zA-Z\.\[\'\"\]]+\s*=\s*(.*)/)) {
-				var self = this;
-				tempStr = tempStr.replace(/^([a-zA-Z_0-9\.\[\'\"\]]*)+\s*=\s*(.*)/, function($0, $1, $2) {
-					obj.set($1, self.calc($2, obj));
-				});
-			} else if(tempStr.match(/\{[\s\S]*\}/)) {
-				return this.json(tempStr, obj);
-			} else {
-				return this.calc(tempStr, obj);
-			}
+		var self = this;
+		if(arr.length == 1) {
+			return this.command(arr[0], obj, this);
+		} else {
+			forEach(arr, function(param) {
+				self.command(param, obj, self);
+			});
 		}
 	}
 }
+
+/*
+ * Ajax
+ */
+
+var pxHttp = {
+	parseHeaders: function(string) {
+		var key;
+		var obj = {};
+		var arr = string.split(/[\n\r]/);
+		forEach(arr, function(value) {
+			if(value != '') {
+				key = value.substr(0, value.indexOf(':'));
+				value = value.substr(value.indexOf(':') + 1);
+				key = toCamelCase(key.toLowerCase());
+				obj[key] = value.trim();
+			}
+		});
+		return obj;
+	},
+	stringifyData: function(obj) {
+		var parts = [];
+		forEach(obj, function(value, key) {
+			parts.push(key + '=' + value);
+		});
+		return encodeURI(parts.join('&'));
+	},
+	createUrl: function(url, obj) {
+		return encodeURI(url + '?' + this.stringifyData(obj));
+	},
+	requestHeaders: {
+		post: {
+			'Content-Type': 'application/x-www-form-urlencoded'
+		}
+	},
+	request: function(obj) {
+		var req = new window.XMLHttpRequest() || new ActiveXObject('Microsoft.XMLHTTP');
+		var self = this;
+		var response;
+		obj.url = this.createUrl(obj.url, obj.params);
+		req.open(obj.method || 'GET', obj.url, false);
+		forEach(this.requestHeaders, function(value, key) {
+			if(obj.method.toLowerCase() == key) {
+				forEach(value, function(value, key) {
+					if(isDefined(value)) {
+						req.setRequestHeader(key, value);
+					}
+				});
+			}
+		});
+		forEach(obj.headers, function(value, key) {
+			if(isDefined(value)) {
+				req.setRequestHeader(key, value);
+			}
+		});
+		req.addEventListener('readystatechange', function() {
+			if(this.readyState == 4) {
+				try {
+					response = JSON.parse(this.response);
+				} catch(err) {
+					response = this.response;
+				}
+				var headers = self.parseHeaders(this.getAllResponseHeaders());
+				if(this.status == 200 && obj.success) {
+					obj.success.call(obj, response, this.status, headers);
+				} else if(obj.error) {
+					obj.error.call(obj, response, this.status, headers);
+				}
+			}
+		}, false);
+		var events = ['loadstart', 'progress', 'error', 'abort', 'load', 'loadend'];
+		forEach(events, function(value){
+			if(obj[value]) {
+				req.addEventListener('on' + value, obj[value], false);
+			}
+		});
+		if(obj.data) {
+			req.send(this.stringifyData(obj.data));
+		} else {
+			req.send(null);
+		}
+	}
+}
+
+/*
+ * Elements
+ */
+
+var pxElement = function() {
+	this.elements = {};
+	this.create = function(name, obj) {
+		var element;
+		if(name.indexOf('<') != -1 && name.indexOf('>') != -1) {
+			element = document.createElement('div');
+			element.innerHTML = name;
+			element = element.childNodes[0];
+		} else {
+			element = document.createElement(name);
+			forEach(obj, function(value, key) {
+				element[key] = value;
+			});
+		}
+		return element;
+	};
+	this.register = function(name, fn) {
+		this.elements[name] = fn;
+	};
+};
 
 /*
  * Data binding
@@ -373,17 +491,19 @@ var pxBinder = function(root, obj) {
 		}
 		this.elements.inputs[element.getAttribute('px-input')].push(element);
 		var name = element.getAttribute('px-input');
-		if(element.value) {
-			this.bind(name, element.value);
-		}
 		var self = this;
+		if(isDefined(element.value)) {
+			this.bind(name, element.value);
+		} else {
+			this.bind(name, element.textContent);
+		}
 		element.addEventListener('input', function() {
 			obj.set(name, this.value);
-			self.bind(name, this.value);
+			self.bind(name, this.value, true);
 		}, false);
 	};
 	this.bind = function(name, value, html) {
-		html = html || false;
+		var html = html || false;
 		var input, bind;
 		if(!this.elements.inputs[name]) {
 			this.elements.inputs[name] = [];
@@ -394,7 +514,11 @@ var pxBinder = function(root, obj) {
 		for(var i = 0; i < this.elements.inputs[name].length; ++i) {
 			input = this.elements.inputs[name][i];
 			if(input != document.activeElement) {
-				input.value = value;
+				if(isDefined(input.value)) {
+					input.value = value;
+				} else {
+					input.textContent = value;
+				}
 			}
 		}
 		for(var i = 0; i < this.elements.binds[name].length; ++i) {
@@ -408,7 +532,7 @@ var pxBinder = function(root, obj) {
 	};
 
 	this.parseHTML(root);
-}
+};
 
 /*
  * Dependency injection
@@ -416,19 +540,20 @@ var pxBinder = function(root, obj) {
 
 var pxInjector = function() {
 	this.dependencies = {};
-	this.createDependency = function(name, obj) {
+	this.register = function(name, obj) {
 		if(!this.dependencies[name]) {
 			this.dependencies[name] = obj;
 		} else {
-			pxError('Dependency named \'' + name +'\' already exist.');
+			pxError('Dependency named \'' + name + '\' already exist.');
 		}
 	};
 	this.importDependencies = function(injector) {
-		;
+		this.dependencies = mergeObjects(this.dependencies, injector.dependencies);
 	};
 	this.getDependencies = function(fn) {
 		var dependencies = [];
-		fn.toString().replace(/^function\s*[^\(]\((.*[^\(])\)/, function($0, $1) {
+		if(!isFunction(fn)) return false;
+		fn.toString().replace(/^function\s*.*\s*[^\(]\((.*[^\(])\)/, function($0, $1) {
 			var tempArr = $1.split(',');
 			for(var i = 0; i < tempArr.length; ++i) {
 				dependencies.push(tempArr[i].trim());
@@ -447,41 +572,33 @@ var pxInjector = function() {
 			}
 		});
 	};
-	this.inject = function(fn, args) {
+	this.inject = function(fn, element) {
+		this.dependencies.element = function element() {
+			return element[0];
+		}
 		var arr = [];
 		var dependencies = this.getDependencies(fn);
-		for(var i = 0; i < dependencies.length; ++i) {
-			arr.push(dependencies[i].apply(this, args));
-		}
+		var self = this;
+		forEach(dependencies, function(value) {
+			arr.push(value.apply(this, element));
+		});
 		fn.apply(fn, arr);
 	};
+	self = this;
+	forEach(arguments, function(value) {
+		self.importDependencies(value);
+	});
 };
 
 /*
- * Injectors
+ * some variables
  */
 
 var scopeInjector = new pxInjector();
+var registerInjector = new pxInjector(scopeInjector);
+var scopeElement = new pxElement();
 
-/*
- * Dependency: px
- *
- * methods:
- *	set()
- *	get()
- *	bind()
- *	watch()
- *	log()
- *	eval()
- *
- * variables:
- *	watchers
- *	data
- *	rootElement
- *
- */
-
-scopeInjector.createDependency('px', function(element) {
+scopeInjector.register('px', function px(element) {
 	var px = {
 		watchers: {},
 		data: {},
@@ -521,7 +638,11 @@ scopeInjector.createDependency('px', function(element) {
 			this.watchers[name] = fn;
 		},
 		log: function(name) {
-			console.log(this.eval(name));
+			if(isString(name)) {
+				console.log(this.eval(name));
+			} else {
+				console.log(name);
+			}
 		},
 		eval: function(string) {
 			if(string.match(regex.path)) {
@@ -529,51 +650,41 @@ scopeInjector.createDependency('px', function(element) {
 			} else {
 				return pxEval.eval(string, this);
 			}
+		},
+		element: function(name, obj) {
+			var element = scopeElement.create(name, obj);
+			binder.parseHTML(element);
+			return element;
 		}
 	};
 	var binder = new pxBinder(element, px);
 	return px;
 });
 
-console.log(scopeInjector);
+scopeInjector.register('http', function http() {
+	return function(obj) {
+		if(isDefined(obj) && isObject(obj)) {
+			pxHttp.request(obj);
+		} else {
+			var tempObj = {};
+			forEach(['GET', 'POST', 'HEAD', 'DELETE', 'JSONP', 'PUT'], function(value) {
+				tempObj[value.toLowerCase()] = function(obj) {
+					pxHttp.request(mergeObjects({ method: value }, obj));
+				}
+			});
+			return tempObj;
+		}
+	};
+});
 
-/*
- * Dependency: http
- *
- * methods:
- *	get()
- *	post()
- *	
- *	
- *
- * variables:
- *	
- *	
- *	
- *
- */
+scopeElement.register('pxClick', function() {
+	console.log(arguments);
+	return {
 
-/*
- * TODO
-
-pxInjector.createDependency('http', {
-	value: function() {
-		return {
-			get: function(path) {
-				;
-			},
-			post: function(path) {
-				;
-			}
-		};
 	}
 });
 
- */
-
- 
-
-window.pxApp = function(fn) {
+window.pxApp = function(name, fn) {
 
 	if(fn) {
 		var appElement = document.querySelector('[px-app]');
@@ -591,9 +702,15 @@ window.pxApp = function(fn) {
 				}
 			}
 			scopeInjector.inject(fn, [elem]);
+			return this;
 		},
 		register: function(name, fn) {
-			scopeInjector.createDependency(name, fn);
+			scopeInjector.register(name, fn);
+			return this;
+		},
+		include: function(px) {
+			console.log(px);
+			return this;
 		}
 	}
 }
@@ -606,9 +723,9 @@ window.pxApp = function(fn) {
  * TODO:
  *
  * Functions with dependency injection and scopes			// DONE
- * Data binding								// DONE
- * Evaluation function							// DONE
- * Creating elements							// 
+ * Data binding												// DONE
+ * Evaluation function										// DONE
+ * Creating elements										// 
  * Support for custom elements and shadow DOM 				// 
  *
  *
