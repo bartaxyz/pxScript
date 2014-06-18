@@ -603,7 +603,7 @@ var pxCustomDOM = function() {
 	};
 };
 
-var pxDOM = new pxCutomDOM();
+var pxDOM = new pxCustomDOM();
 
 pxDom.register('pxClick', {
 	
