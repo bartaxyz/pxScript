@@ -1,24 +1,20 @@
-var yourApp = pxApp();
-yourApp.register('api_2', function api_2() {
+var yourApp = pxApp('yourApp');
+
+yourApp.register('api_2', function() {
 	return {
 		blah: 'blah'
 	}
 });
 
-var myApp = pxApp();
+var myApp = pxApp('myApp');
 
-myApp.include(yourApp);
+myApp.include('yourApp');
 
-myApp.register('api', function api() {
-	return {
-		set: function(string) {
-			;
-		}
-	};
-});
-
-myApp.scope('example1', function(px, http) {
+myApp.scope('example1', function(px, http, api_2, element) {
 	px.set('name', 'Martin', true);
+	px.set('console.log', function(event) {
+		console.log(event);
+	});
 });
 
 myApp.scope('example2', function(px) {

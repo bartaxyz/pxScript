@@ -74,8 +74,12 @@ var isDefined = function(value) {
 	return typeof value !== 'undefined';
 }
 
+var isCamelCase = function(value) {
+	return value.indexOf('-') ? false : true;
+}
+
 var toBool = function(value) {
-	return ((false + '').toLowerCase() == 'true') ? true : false
+	return ((value + '').toLowerCase() == 'true') ? true : false;
 }
 
 var toCamelCase = function(value) {
@@ -90,11 +94,20 @@ var toDashCase = function(value) {
 	});
 }
 
-var mergeObjects = function(obj1, obj2) {
-	forEach(obj1, function(prop, key) {
-		obj2[key] = prop;
+var mergeObjects = function() {
+	var arg;
+	if(isArrayLike(arguments[0])) {
+		arg = arguments[0];
+	} else {
+		arg = arguments;
+	}
+	var obj = {};
+	forEach(arg, function(prop, key) {
+		forEach(prop, function(prop, key) {
+			obj[key] = prop;
+		});
 	});
-	return obj2;
+	return obj;
 }
 
 var forEach = function(value, fn) {
@@ -117,9 +130,7 @@ var regex = {
 	operators: /[\+\-\*\/]/
 }
 
-/*
- * evaluation
- */
+/* Evaluation */
 
 var pxEval = {
 	path: function(string, obj) {
@@ -183,8 +194,6 @@ var pxEval = {
 			}
 		}
 		string = resultString.replace(/\)/g, '');
-
-		//console.log(string);
 
 		var calcChar = [];
 		for(var i = 0; i < string.length; ++i) {
@@ -340,9 +349,7 @@ var pxEval = {
 	}
 }
 
-/*
- * Ajax
- */
+/* Ajax */
 
 var pxHttp = {
 	parseHeaders: function(string) {
@@ -423,9 +430,7 @@ var pxHttp = {
 	}
 }
 
-/*
- * Elements
- */
+/* Elements */
 
 var pxElement = function() {
 	this.elements = {};
@@ -448,9 +453,7 @@ var pxElement = function() {
 	};
 };
 
-/*
- * Data binding
- */
+/* Data binding */
 
 var pxBinder = function(root, obj) {
 	this.elements = {
@@ -534,15 +537,13 @@ var pxBinder = function(root, obj) {
 	this.parseHTML(root);
 };
 
-/*
- * Dependency injection
- */
+/* Dependency injection */
 
 var pxInjector = function() {
 	this.dependencies = {};
-	this.register = function(name, obj) {
+	this.register = function(name, fn) {
 		if(!this.dependencies[name]) {
-			this.dependencies[name] = obj;
+			this.dependencies[name] = fn;
 		} else {
 			pxError('Dependency named \'' + name + '\' already exist.');
 		}
@@ -572,15 +573,12 @@ var pxInjector = function() {
 			}
 		});
 	};
-	this.inject = function(fn, element) {
-		this.dependencies.element = function element() {
-			return element[0];
-		}
+	this.inject = function(fn, elem) {
 		var arr = [];
 		var dependencies = this.getDependencies(fn);
 		var self = this;
 		forEach(dependencies, function(value) {
-			arr.push(value.apply(this, element));
+			arr.push(value.apply(this, elem));
 		});
 		fn.apply(fn, arr);
 	};
@@ -590,13 +588,30 @@ var pxInjector = function() {
 	});
 };
 
-/*
- * some variables
- */
+/* Custom elements and attributes */
+
+var pxCustomDOM = function() {
+	this.attributes = [];
+	this.elements = [];
+	this.register = function(name, obj) {
+		if(isCamelCase(name)) {
+			name = toDashCase(name);
+		}
+	};
+	this.parse = function(elem) {
+		;
+	};
+};
+
+var pxDOM = new pxCutomDOM();
+
+pxDom.register('pxClick', {
+	
+});
+
+/* some variables */
 
 var scopeInjector = new pxInjector();
-var registerInjector = new pxInjector(scopeInjector);
-var scopeElement = new pxElement();
 
 scopeInjector.register('px', function px(element) {
 	var px = {
@@ -677,21 +692,36 @@ scopeInjector.register('http', function http() {
 	};
 });
 
-scopeElement.register('pxClick', function() {
-	console.log(arguments);
-	return {
-
-	}
+scopeInjector.register('element', function element(element) {
+	window.elem = element;
+	return element;
 });
 
-window.pxApp = function(name, fn) {
+var appInjector = new pxInjector(scopeInjector);
+
+appInjector.register('path', function path() {
+	var self = {
+		when: function() {
+			return self;
+		}
+	};
+	return self;
+});
+
+var apps = {};
+
+window.pxApp = function(appName, fn) {
+	apps[appName] = {
+		injector: new pxInjector(scopeInjector)
+	}
 
 	if(fn) {
 		var appElement = document.querySelector('[px-app]');
-		scopeInjector.inject(fn, [appElement]);
+		apps[appName].inject(fn, [appElement]);
 	}
 	
 	return {
+		name: appName,
 		scope: function(name, fn) {
 			var elem;
 			var elems = document.querySelectorAll('[px-scope]');
@@ -701,16 +731,19 @@ window.pxApp = function(name, fn) {
 					break;
 				}
 			}
-			scopeInjector.inject(fn, [elem]);
+			apps[appName].injector.inject(fn, [elem]);
 			return this;
 		},
 		register: function(name, fn) {
-			scopeInjector.register(name, fn);
+			apps[appName].injector.register(name, fn);
 			return this;
 		},
-		include: function(px) {
-			console.log(px);
+		include: function(name) {
+			apps[appName].injector.importDependencies(apps[name].injector);
 			return this;
+		},
+		directive: function(name, fn) {
+			;
 		}
 	}
 }
