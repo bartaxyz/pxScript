@@ -605,7 +605,7 @@ var pxCustomDOM = function() {
 
 var pxDOM = new pxCustomDOM();
 
-pxDom.register('pxClick', {
+pxDOM.register('pxClick', {
 	
 });
 
