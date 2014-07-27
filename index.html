@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html >
 	<head>
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/>
@@ -15,8 +15,9 @@
 		<header>
 			<div class="background">
 				<div class="vertical-align">
-					<h1 px-click="console.log()"><span>px</span>Script <span>beta</span></h1>
+					<h1 px-click="console.log('blah')"><span>px</span>Script <span>beta</span></h1>
 					<h2>Lightweight AngularJS inspired JavaScript library.</h2>
+					<button class="donate" onclick="location.href='https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=T4H5ER42QRBAG'">Donate</button>
 				</div>
 				<div class="center-box">
 					<div class="desktop">
@@ -160,6 +161,7 @@ myApp.scope('main-scope', function(px) {
 
 		<div ng-app="ngApp" ng-controller="mainController"></div>
 
+		<script src="http://rawgithub.com/PageOnline/donatejs/master/src/donate.js?"></script>
 		<script src="js/prefixfree.js"></script>
 		<script src="js/highlight/highlight.js"></script>
 		<script> hljs.initHighlighting(); </script>

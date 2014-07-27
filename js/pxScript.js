@@ -593,20 +593,72 @@ var pxInjector = function() {
 var pxCustomDOM = function() {
 	this.attributes = [];
 	this.elements = [];
-	this.register = function(name, obj) {
-		if(isCamelCase(name)) {
-			name = toDashCase(name);
-		}
+	this.registerAttribute = function(name, obj) {
+		name = toCamelCase(name);
+		var o = {}
+		o[name] = obj;
+		this.attributes.push(o);
+	};
+	this.registerElement = function(name, obj) {
+		name = toCamelCase(name);
+		var o = {}
+		o[name] = obj;
+		this.elements.push(o);
 	};
 	this.parse = function(elem) {
-		;
+		var attrs, elems, name;
+		forEach(this.attributes, function(customAttribute) {
+			name = Object.keys(customAttribute)[0];
+			attrs = elem.querySelectorAll('[' + toDashCase(name) + ']');
+			forEach(attrs, function(item) {
+				customAttribute[name].fn(undefined, item, item.getAttribute(toDashCase(name)));
+			});
+		});
+		forEach(this.elements, function(customElement) {
+			name = Object.keys(customElement)[0];
+			attrs = elem.getElementsByTagName(toDashCase(name));
+			forEach(attrs, function(item) {
+				customElement[name].fn(undefined, item);
+			});
+		});
 	};
 };
 
 var pxDOM = new pxCustomDOM();
 
-pxDOM.register('pxClick', {
-	
+pxDOM.registerAttribute('pxClick', {
+	fn: function(px, element, attribute) {
+		console.log(px);
+		element.addEventListener('click', function(event) {
+			console.log(element);
+		}, false);
+	}
+});
+
+pxDOM.registerAttribute('pxInclude', {
+	fn: function(px, element, attribute) {
+		pxHttp.request({
+			method: 'GET',
+			url: attribute,
+			success: function(data) {
+				element.outerHTML = data;
+				pxDOM.parse(element);
+			}
+		});
+	}
+});
+
+pxDOM.registerElement('pxInclude', {
+	fn: function(px, element) {
+		pxHttp.request({
+			method: 'GET',
+			url: element.getAttribute('src'),
+			success: function(data) {
+				element.outerHTML = data;
+				pxDOM.parse(element);
+			}
+		});
+	}
 });
 
 /* some variables */
@@ -693,33 +745,58 @@ scopeInjector.register('http', function http() {
 });
 
 scopeInjector.register('element', function element(element) {
-	window.elem = element;
+
 	return element;
 });
 
 var appInjector = new pxInjector(scopeInjector);
 
-appInjector.register('path', function path() {
+appInjector.register('hash', function hash() {
+	var mem = [], temp, duplicatePrevent = false, lastHash = null;
+	var hashchange = function(event) {
+		event.stopPropagation();
+		if(!(/^#!\/.*/.test(location.hash))) {
+			duplicatePrevent = true;
+		}
+		forEach(mem, function(item) {
+			temp = location.hash.replace(/^#!?\/?/, '/');
+			if(item.path != temp) return false;
+			location.hash = '#!' + temp;
+			if(item.fn && !duplicatePrevent && lastHash != temp) {
+				item.fn();
+			} else {
+				duplicatePrevent = false;
+			}
+			lastHash = temp;
+		});
+	};
+	window.addEventListener('DOMContentLoaded', hashchange, false);
+	window.addEventListener('hashchange', hashchange, false);
 	var self = {
-		when: function() {
+		when: function(path, obj) {
+			mem.push(mergeObjects({ path: path }, obj));
 			return self;
 		}
 	};
 	return self;
 });
 
+appInjector.register('', function() {});
+
 var apps = {};
 
 window.pxApp = function(appName, fn) {
 	apps[appName] = {
-		injector: new pxInjector(scopeInjector)
+		injector: new pxInjector(scopeInjector),
+		appInjector: new pxInjector(appInjector)
 	}
 
 	if(fn) {
 		var appElement = document.querySelector('[px-app]');
-		apps[appName].inject(fn, [appElement]);
+		apps[appName].appInjector.inject(fn, [appElement]);
+		pxDOM.parse(appElement);
 	}
-	
+
 	return {
 		name: appName,
 		scope: function(name, fn) {
@@ -731,10 +808,11 @@ window.pxApp = function(appName, fn) {
 					break;
 				}
 			}
+			pxDOM.parse(elem);
 			apps[appName].injector.inject(fn, [elem]);
 			return this;
 		},
-		register: function(name, fn) {
+		service: function(name, fn) {
 			apps[appName].injector.register(name, fn);
 			return this;
 		},
@@ -742,7 +820,10 @@ window.pxApp = function(appName, fn) {
 			apps[appName].injector.importDependencies(apps[name].injector);
 			return this;
 		},
-		directive: function(name, fn) {
+		attribute: function(name, obj) {
+			pxDOM.registerAttribute();
+		},
+		element: function(name, obj) {
 			;
 		}
 	}
@@ -758,13 +839,14 @@ window.pxApp = function(appName, fn) {
  * Functions with dependency injection and scopes			// DONE
  * Data binding												// DONE
  * Evaluation function										// DONE
- * Creating elements										// 
+ * Creating elements and attributes							// 
  * Support for custom elements and shadow DOM 				// 
- *
- *
- *
- *
- *
- *
- *
+ * Ajax pattern of sending data								//
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
  */

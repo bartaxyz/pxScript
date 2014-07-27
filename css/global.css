@@ -44,6 +44,9 @@ body {
 				vertical-align: top;
 			}
 		}
+		.donate {
+			margin-top: -50px;
+		}
 		.center-box {
 			position: absolute;
 			bottom: 0;
@@ -51,16 +54,23 @@ body {
 			width: 100%;
 			max-width: 100%;
 			font-weight: 100;
+			box-shadow:
+				inset 0 -7px 7px -7px rgba(0, 0, 0, 0.2),
+				0 -7px 7px -7px rgba(0, 0, 0, 0.6);
 		}
 		a {
 			text-decoration: none;
 			padding: 15px 35px;
 			font-size: 25px;
+			min-width: 150px;
 			display: inline-block;
 			color: rgb(208, 76, 76);
 			position: relative;
 			cursor: pointer;
 			transition: .5s;
+			&:hover {
+				background: rgba(0, 0, 0, 0.05);
+			}
 		}
 		label {
 			display: block;
@@ -214,6 +224,9 @@ button {
 			font: 100 normal 20px "Exo 2", sans-serif;
 			padding: 10px;
 			background: #444;
+			padding-bottom: 15px;
+			margin-top: -5px;
+			box-shadow: inset 0 -10px 10px -10px rgba(0, 0, 0, 0.5);
 		}
 		code {
 			text-align: left;
@@ -249,39 +262,38 @@ button {
 }
 
 @media screen and (max-width:800px) {
-	body > header h1, body > header p {
-		line-height: 1em;
-		text-align: center;
-		width: 100%;
-	}
-
-	body > header h1 {
-		font: 700 normal 3.5em "Exo 2", sans-serif; 
-		margin: 50px 0 0;
-		min-height: 114px;
-	}
-
-	body > header h1 span {
-		top: 0.6em;
-		font-size: .6em;
-		vertical-align: top;
-	}
-
-	body > header a {
-		float: left;
-		padding: 15px 0;
-		font-size: 25px;
-		margin: 0;
-		width: 50%;
-		width: 100%;
-	}
-
-	body > header .desktop {
-		display: none;
-	}
-
-	body > header select {
-		display: block;
+	body {
+		> header {
+			h1, p {
+				line-height: 1em;
+				text-align: center;
+				width: 100%;
+			}
+			h1 {
+				font: 700 normal 3.5em "Exo 2", sans-serif; 
+				margin: 50px 0 0;
+				min-height: 114px;
+				span {
+					top: 0.6em;
+					font-size: .6em;
+					vertical-align: top;
+				}
+			}
+			a {
+				float: left;
+				padding: 15px 0;
+				font-size: 25px;
+				margin: 0;
+				width: 50%;
+				width: 100%;
+			}
+			.desktop {
+				display: none;
+			}
+			select {
+				display: block;
+			}
+		}
 	}
 
 	h2 {
@@ -298,15 +310,18 @@ button {
 
 	.example {
 		border: none;
+		pre, .result {
+			width: 100%;
+			height: auto;
+		}
+		pre {
+			code {
+				height: auto;
+			}
+			.lang {
+				margin-top: 0;
+				padding-bottom: 10px;
+			}
+		}
 	}
-
-	.example pre, .example .result {
-		width: 100%;
-		height: auto;
-	}
-
-	.example pre code {
-		height: auto;
-	}
-
 }

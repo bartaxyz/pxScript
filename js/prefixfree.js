@@ -12,12 +12,17 @@
  */
 
 (function() {
-	if(!window.StyleFix || !window.PrefixFree) return;
+	if(!window.StyleFix || !window.PrefixFree) {
+		return;
+	}
 
 	StyleFix.register(function(css) {
+
 		css = css.replace(/\/\*(.|[\r\n])*?\*\//g, '');
-		parseCSS = function(str) {
-			if(str.indexOf('@keyframes ') != -1 || str.indexOf('@media') != -1) {
+		css = css.replace(/\{/g, '{;');
+
+		var parseCSS = function(str) {
+			if(str.indexOf('keyframes') != -1 || str.indexOf('media') != -1) {
 				return { outer: str, inner: '', response: false };
 			}
 
@@ -48,8 +53,8 @@
 							selector = tempString.replace(/\{/g, '');
 						} else if(brackets == 1) {
 							nestedSelector = tempString;
-							tempString = tempString.split(',');
-							tempString = selector + tempString.join(',' + selector);
+							tempString = selector + tempString;
+							tempString = tempString.replace(/\s+/g, ' ');
 							response = true;
 						} else if(brackets > 2) {
 							response = true;
@@ -69,10 +74,11 @@
 						brackets -= 1;
 						if(brackets == 0) {
 							outerString += '\n}';
+							tempString = '';
 						} else {
 							innerString += '\n}';
+							tempString = '';
 						}
-						tempString = '';
 						break;
 				}
 			}
@@ -80,7 +86,6 @@
 			if(innerString != '') {
 				innerString = innerString.replace(/^\s/, ' ');
 			}
-			
 			return { outer: outerString, inner: innerString, response: response };
 		}
 
@@ -120,23 +125,44 @@
 		var newCSS = '',
 			rule,
 			prom,
-			result;
+			result,
+			isMedia,
+			temp = [],
+			tempCSS = '';
 
 		for(var i = 0; i < nested.arr.length; ++i) {
 			rule = nested.arr[i];
+			if(/@(-webkit-|-ms-|-o-|-moz-)?media/.test(rule)) {
+				rule.replace(/(@(-webkit-|-ms-|-o-|-moz-)?media.*\{;)([\s\S]*)(})/, function($1, $2, $3, $4, $5) {
+					temp[0] = $2;
+					temp[1] = $5;
+					rule = $4;
+				});
+				isMedia = true;
+			} else {
+				isMedia = false;
+			}
 			prom = parseCSS(rule);
-			newCSS += prom.outer;
+			tempCSS += prom.outer;
 			result = prom.response;
 			while(result) {
 				prom = parseCSS(prom.inner);
-				newCSS += prom.outer;
+				tempCSS += prom.outer;
 				result = prom.response;
 			}
-			newCSS += prom.inner;
+			tempCSS += prom.inner;
+			if(isMedia) {
+				tempCSS = temp[0] + tempCSS + temp[1];
+			}
+			newCSS += tempCSS;
+			tempCSS = '';
 		}
 
 		newCSS = newCSS.replace(/\s*&\s*/g, '');
-
+		newCSS = newCSS.replace(/\n\s+(.*;)/g, function($0, $1) { return '\n    ' + $1 });
+		newCSS = newCSS.replace(/\}\n*/g, '}\n\n');
+		newCSS = newCSS.replace(/\{;+\n?/g, '{\n');
+		//document.body.innerHTML += '<pre>' + newCSS + '</pre>';
 		return newCSS;
 	});
 })();

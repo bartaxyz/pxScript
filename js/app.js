@@ -1,19 +1,34 @@
 var yourApp = pxApp('yourApp');
 
-yourApp.register('api_2', function() {
+yourApp.service('api_2', function() {
 	return {
 		blah: 'blah'
 	}
 });
 
-var myApp = pxApp('myApp');
+var myApp = pxApp('myApp', function(px, hash) {
+	hash.when('/Home', {
+		fn: function() {
+			console.log('you are home');
+		}
+	}).when('/Out', {
+		fn: function() {
+			console.log('you are out');
+		}
+	});
+}).include('yourApp');
 
-myApp.include('yourApp');
+myApp.scope('main-scope', function(px) {
+	px.set('console.log', function() {
+		console.log('event');
+	});
+	px.eval('console.log()');
+});
 
-myApp.scope('example1', function(px, http, api_2, element) {
+myApp.scope('example1', function(px, http, element) {
 	px.set('name', 'Martin', true);
-	px.set('console.log', function(event) {
-		console.log(event);
+	px.set('console.log', function() {
+		console.log('event');
 	});
 });
 
