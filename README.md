@@ -1,11 +1,6 @@
 # pxScript
 
----
-
-This repository was me trying to rewrite basic Angular functionality so that I can understand it better. It is not intended for use anywhere.
-
----
-
+> This repository was me trying to rewrite basic Angular functionality so that I can understand it better. It is not intended for use anywhere.
 
 Lightweight angularjs inspired JavaScript library.
 
